@@ -155,7 +155,13 @@ async fn main() -> anyhow::Result<()> {
                         .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
                         .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
                 )
-                .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any)),
+                .layer(
+                    CorsLayer::new()
+                        .allow_origin("http://localhost:5173".parse::<axum::http::HeaderValue>().unwrap())
+                        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT, axum::http::Method::DELETE])
+                        .allow_headers(Any)
+                        .allow_credentials(true)
+                ),
         )
         .with_state(state);
 

@@ -568,6 +568,34 @@ curl -X POST http://localhost:8081/realms/master/protocol/openid-connect/token \
   -d "password=[password]"
 ```
 
+## Web UI
+
+Blacklake includes a modern React-based web interface for managing data artifacts.
+
+### Features
+- **OIDC Authentication**: Secure login with OpenID Connect
+- **Repository Management**: Create, browse, and manage repositories
+- **File Operations**: Upload, download, and view files with metadata
+- **RDF Preview**: View Dublin Core metadata in Turtle format
+- **Search Interface**: Search across repositories with filters
+- **Responsive Design**: Modern UI built with Tailwind CSS
+
+### Quick Start
+```bash
+# Start the UI development server
+cd ui
+pnpm install
+pnpm dev
+```
+
+The UI will be available at `http://localhost:5173`.
+
+### Configuration
+Copy `ui/env.example` to `ui/.env.development` and configure:
+- `VITE_API_BASE_URL`: Blacklake API URL (default: http://localhost:8080)
+- `VITE_OIDC_ISSUER`: OIDC provider URL (default: http://localhost:8081/realms/master)
+- `VITE_OIDC_CLIENT_ID`: OIDC client ID (default: blacklake)
+
 ## Roadmap
 
 - [x] Full OIDC/JWT authentication
@@ -576,6 +604,6 @@ curl -X POST http://localhost:8081/realms/master/protocol/openid-connect/token \
 - [x] Data lineage tracking
 - [x] Backup and restore procedures
 - [x] Metrics and monitoring
-- [ ] Web UI for repository browsing
+- [x] Web UI for repository browsing
 - [ ] Multi-tenant support
 - [ ] Advanced analytics dashboard

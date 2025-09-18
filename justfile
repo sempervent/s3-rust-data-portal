@@ -34,3 +34,20 @@ fmt:
 
 clean:
 	cargo clean
+
+# UI commands
+ui-install:
+	cd ui && pnpm install
+
+ui-dev:
+	cd ui && pnpm dev
+
+ui-build:
+	cd ui && pnpm build
+
+# Run all services (API + UI)
+dev:
+	just up
+	just migrate
+	just run &
+	just ui-dev
