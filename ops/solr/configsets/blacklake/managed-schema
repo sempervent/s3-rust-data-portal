@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema name="blacklake" version="1.6">
+  <!-- Field definitions for BlackLake search -->
+  
+  <!-- Unique key -->
+  <uniqueKey>id</uniqueKey>
+  
+  <!-- Field types -->
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true" />
+  <fieldType name="plong" class="solr.LongPointField" docValues="true" />
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true" />
+  <fieldType name="pint" class="solr.IntPointField" docValues="true" />
+  
+  <!-- Text field with English analysis -->
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.EnglishPossessiveFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.EnglishPossessiveFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+    </analyzer>
+  </fieldType>
+  
+  <!-- English text with splitting -->
+  <fieldType name="text_en_splitting" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
+    <analyzer type="index">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateNumberParts="1" generateWordParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateNumberParts="1" generateWordParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  
+  <!-- Fields -->
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="repo" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="ref" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="path" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="commit_id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="file_name" type="text_general" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="title" type="text_general" indexed="true" stored="true" required="false" multiValued="false" />
+  <field name="description" type="text_en_splitting" indexed="true" stored="true" required="false" multiValued="false" />
+  <field name="tags" type="string" indexed="true" stored="true" required="false" multiValued="true" />
+  <field name="org_lab" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="file_type" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="file_size" type="plong" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="creation_dt" type="pdate" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="sha256" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="content" type="text_en_splitting" indexed="true" stored="true" required="false" multiValued="false" />
+  <field name="meta" type="string" indexed="false" stored="true" required="false" multiValued="false" />
+  
+  <!-- Copy fields for search -->
+  <copyField source="file_name" dest="text"/>
+  <copyField source="title" dest="text"/>
+  <copyField source="description" dest="text"/>
+  <copyField source="content" dest="text"/>
+  
+  <!-- Default search field -->
+  <defaultSearchField>text</defaultSearchField>
+  
+  <!-- SolrQueryParser configuration -->
+  <solrQueryParser defaultOperator="AND"/>
+</schema>

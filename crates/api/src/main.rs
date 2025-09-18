@@ -12,6 +12,7 @@ use blacklake_core::{
     UploadInitResponse, canonical_to_dc_jsonld, canonical_to_turtle, validate_repo_name,
     normalize_path, validate_meta, validate_content_type, validate_file_size,
     SchemaRegistry, create_dublin_core_schema, deep_merge, get_metadata_changes,
+    SolrClient, SessionManager, JobContext, run_all_workers,
 };
 use blacklake_index::{IndexClient, IndexError};
 use blacklake_storage::{StorageClient, StorageError};
@@ -32,19 +33,36 @@ use uuid::Uuid;
 mod auth;
 mod health;
 mod rate_limit;
+mod governance;
+mod workers;
+mod webhooks;
+mod exports;
+mod ui_deltas;
+mod search_api;
+mod sessions;
+mod solr_search;
+mod policy_enforcement;
+mod admin_access;
+mod openapi;
+mod connectors;
+mod semantic_search;
+mod compliance;
 
 use auth::{AuthLayer, auth_middleware, request_id_middleware, create_auth_layer};
 use health::{HealthState, liveness_check, readiness_check, metrics, create_metrics_registry};
 use rate_limit::{RateLimitState, rate_limit_middleware, create_rate_limit_config, start_rate_limit_cleanup};
 
 #[derive(Clone)]
-struct AppState {
-    index: IndexClient,
-    storage: StorageClient,
-    auth_layer: AuthLayer,
-    rate_limit_state: RateLimitState,
-    health_state: HealthState,
-    schema_registry: SchemaRegistry,
+pub struct AppState {
+    pub index: IndexClient,
+    pub storage: StorageClient,
+    pub auth_layer: AuthLayer,
+    pub rate_limit_state: RateLimitState,
+    pub health_state: HealthState,
+    pub schema_registry: SchemaRegistry,
+    pub solr_client: SolrClient,
+    pub session_manager: tower_sessions::SessionManagerLayer<tower_sessions_redis_store::RedisStore>,
+    pub job_context: JobContext,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -103,6 +121,31 @@ async fn main() -> anyhow::Result<()> {
     let index = IndexClient::from_env().await?;
     let storage = StorageClient::from_env().await?;
     
+    // Initialize Solr client
+    let solr_url = std::env::var("SOLR_URL").unwrap_or_else(|_| "http://localhost:8983".to_string());
+    let solr_client = SolrClient::new(&solr_url, "blacklake")?;
+    
+    // Initialize Redis client for sessions
+    let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let redis_client = tower_sessions_redis_store::fred::prelude::RedisClient::new(
+        tower_sessions_redis_store::fred::prelude::RedisConfig::from_url(&redis_url)?,
+        None,
+        None,
+        None,
+        6,
+    );
+    redis_client.connect();
+    redis_client.wait_for_connect().await?;
+    
+    // Initialize session manager
+    let session_manager = SessionManager::layer(redis_client).await?;
+    
+    // Initialize job context
+    let job_context = JobContext {
+        db_pool: index.get_pool().clone(),
+        s3_client: storage.get_s3_client().clone(),
+    };
+    
     // Initialize auth layer
     let auth_layer = create_auth_layer()?;
     
@@ -130,6 +173,9 @@ async fn main() -> anyhow::Result<()> {
         rate_limit_state,
         health_state,
         schema_registry,
+        solr_client,
+        session_manager,
+        job_context,
     };
 
     // Build the application
@@ -148,8 +194,31 @@ async fn main() -> anyhow::Result<()> {
         .route("/v1/repos/:repo/rdf/:ref/*path", get(get_rdf))
         .route("/v1/schemas/:collection", get(get_schema))
         .route("/v1/schemas/default", get(get_default_schema))
+        // Governance routes
+        .merge(governance::create_governance_routes())
+        // Webhook routes
+        .merge(webhooks::create_webhook_routes())
+        // Export routes
+        .merge(exports::create_export_routes())
+        // UI API routes
+        .merge(ui_deltas::create_ui_routes())
+        // Session routes
+        .merge(sessions::create_session_routes())
+        // Solr search routes
+        .merge(solr_search::create_solr_search_routes())
+        // Admin access routes
+        .merge(admin_access::create_admin_access_routes())
+        // OpenAPI specification
+        .merge(openapi::create_openapi_routes())
+        // Connector management routes
+        .merge(connectors::create_connector_routes())
+        // Semantic search routes
+        .merge(semantic_search::create_semantic_search_routes())
+        // Compliance routes
+        .merge(compliance::create_compliance_routes())
         .layer(
             ServiceBuilder::new()
+                .layer(state.session_manager.clone())
                 .layer(middleware::from_fn_with_state(
                     state.rate_limit_state.clone(),
                     rate_limit_middleware,
@@ -177,6 +246,10 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port)).await?;
     info!("Server listening on {}:{}", host, port);
+
+    // Start background workers
+    let worker_manager = workers::WorkerManager::new(index.clone(), storage.clone(), solr_client.clone());
+    worker_manager.start_all().await;
 
     // Setup graceful shutdown
     let shutdown_signal = async {
@@ -311,6 +384,30 @@ async fn upload_init(
     // Get repository
     let repo_info = state.index.get_repo_by_name(&repo).await?;
 
+    // ===== QUOTA ENFORCEMENT =====
+    
+    // Check quota limits before allowing upload
+    let quota_status = state.index.get_quota_status(repo_info.id).await?;
+    if let Some(quota) = quota_status {
+        // Check if adding this file would exceed hard limit
+        if quota.current_bytes + payload.size > quota.hard_limit {
+            return Err(ApiError::PayloadTooLarge(
+                format!("Upload would exceed repository quota: {} bytes (limit: {} bytes)", 
+                    quota.current_bytes + payload.size, quota.hard_limit)
+            ));
+        }
+        
+        // Add warning header if soft limit would be exceeded
+        if quota.current_bytes + payload.size > quota.soft_limit {
+            // Note: In a real implementation, we'd add this as a response header
+            // For now, we'll just log it
+            tracing::warn!(
+                "Upload would exceed soft quota limit: {} bytes (soft limit: {} bytes, hard limit: {} bytes)",
+                quota.current_bytes + payload.size, quota.soft_limit, quota.hard_limit
+            );
+        }
+    }
+
     // Generate SHA256 hash (in real implementation, this would be computed from file content)
     let sha256 = blacklake_core::hash_bytes(&format!("{}{}", payload.path, payload.size).as_bytes());
     let s3_key = blacklake_storage::StorageClient::content_address_key(&sha256);
@@ -368,6 +465,61 @@ async fn commit(
 
     // Get repository
     let repo_info = state.index.get_repo_by_name(&repo).await?;
+
+    // ===== GOVERNANCE ENFORCEMENT =====
+    
+    // Check branch protection rules
+    if let Some(protected_ref) = state.index.get_protected_ref(repo_info.id, &payload.r#ref).await? {
+        // Get current commit for check results
+        let current_commit = state.index.get_ref(repo_info.id, &payload.r#ref).await.ok();
+        let commit_id = current_commit.as_ref().map(|c| c.commit_id).unwrap_or(Uuid::new_v4());
+        
+        // Get check results for current commit
+        let check_results = state.index.get_check_results(repo_info.id, &payload.r#ref, commit_id).await?;
+        
+        // Evaluate policy
+        let is_admin = auth.roles.contains(&"admin".to_string());
+        let evaluation = blacklake_core::governance::PolicyEngine::evaluate_branch_protection(
+            &protected_ref,
+            commit_id,
+            &auth.sub,
+            is_admin,
+            &check_results,
+        );
+        
+        if !evaluation.allowed {
+            // Log policy violation
+            state.index.log_audit(
+                &auth.sub,
+                "policy_violation",
+                Some(&repo),
+                Some(&payload.r#ref),
+                None,
+                Some(&serde_json::json!({
+                    "policy_name": "branch_protection",
+                    "violation_reason": evaluation.reason,
+                    "required_checks": evaluation.required_checks,
+                    "missing_reviewers": evaluation.missing_reviewers
+                })),
+                None,
+            ).await?;
+            
+            return Err(ApiError::Forbidden(
+                evaluation.reason.unwrap_or_else(|| "Branch protection policy violation".to_string())
+            ));
+        }
+    }
+    
+    // Check quota limits before processing changes
+    let quota_status = state.index.get_quota_status(repo_info.id).await?;
+    if let Some(quota) = quota_status {
+        if quota.hard_exceeded {
+            return Err(ApiError::PayloadTooLarge(
+                format!("Repository quota exceeded: {} bytes (limit: {} bytes)", 
+                    quota.current_bytes, quota.hard_limit)
+            ));
+        }
+    }
 
     // Validate metadata against schema
     for change in &payload.changes {
@@ -492,6 +644,80 @@ async fn commit(
             commit.id,
         )
         .await?;
+
+    // ===== POST-COMMIT GOVERNANCE ACTIONS =====
+    
+    // Update repository usage
+    let mut total_size_change: i64 = 0;
+    for change in &final_changes {
+        match change.op {
+            ChangeOp::Add | ChangeOp::Modify => {
+                if let Some(sha256) = &change.sha256 {
+                    // Get object size from storage
+                    if let Ok(object) = state.index.get_object(sha256).await {
+                        total_size_change += object.size;
+                    }
+                }
+            }
+            ChangeOp::Delete => {
+                // For deletes, we need to get the size of the deleted object
+                if let Some(current_commit) = &current_commit {
+                    if let Ok(current_entries) = state.index.get_entries(current_commit.commit_id, Some(&change.path)).await {
+                        if let Some(current_entry) = current_entries.entries.first() {
+                            if let Some(object_sha256) = &current_entry.object_sha256 {
+                                if let Ok(object) = state.index.get_object(object_sha256).await {
+                                    total_size_change -= object.size;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ChangeOp::Meta => {
+                // Metadata-only changes don't affect storage usage
+            }
+        }
+    }
+    
+    // Update usage if there's a size change
+    if total_size_change != 0 {
+        if let Some(current_usage) = state.index.get_repo_usage(repo_info.id).await? {
+            let new_usage = (current_usage.current_bytes as i64 + total_size_change).max(0) as u64;
+            state.index.update_repo_usage(repo_info.id, new_usage).await?;
+        }
+    }
+    
+    // Trigger webhooks for commit events
+    let webhooks = state.index.get_webhooks(repo_info.id).await?;
+    for webhook in webhooks {
+        if webhook.events.contains(&blacklake_core::governance::WebhookEvent::CommitCreated) {
+            let payload = blacklake_core::governance::CommitWebhookPayload {
+                event: blacklake_core::governance::WebhookEvent::CommitCreated,
+                repo_id: repo_info.id,
+                repo_name: repo_info.name.clone(),
+                commit_id: commit.id,
+                ref_name: payload.r#ref.clone(),
+                user_id: auth.sub.clone(),
+                message: payload.message.clone().unwrap_or_default(),
+                timestamp: chrono::Utc::now(),
+            };
+            
+            let delivery = blacklake_core::governance::WebhookDelivery {
+                id: Uuid::new_v4(),
+                webhook_id: webhook.id,
+                event_type: "commit.created".to_string(),
+                payload: serde_json::to_value(&payload)?,
+                response_status: None,
+                response_body: None,
+                attempts: 0,
+                max_attempts: 3,
+                next_retry_at: Some(chrono::Utc::now()),
+                delivered_at: None,
+            };
+            
+            state.index.create_webhook_delivery(&delivery).await?;
+        }
+    }
 
     // Log audit
     state

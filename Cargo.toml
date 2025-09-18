@@ -5,7 +5,8 @@ members = [
     "crates/index",
     "crates/storage",
     "crates/modelx",
-    "crates/cli"
+    "crates/cli",
+    "crates/connectors"
 ]
 resolver = "2"
 
@@ -66,3 +67,16 @@ url = "2.4"
 # RDF support
 sophia = { version = "0.8", features = ["all"] }
 regex = "1"
+
+# Job system
+apalis = { version = "0.6", features = ["redis", "tokio"] }
+apalis-redis = "0.6"
+apalis-core = "0.6"
+
+# Sessions
+tower-sessions = "0.7"
+tower-sessions-redis-store = "0.7"
+
+# Cryptography
+rand = "0.8"
+hmac = "0.12"

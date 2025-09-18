@@ -1,0 +1,205 @@
+# Docker Compose Override for Development
+# Week 5: Development-specific configurations
+
+version: '3.8'
+
+services:
+  # ===== DEVELOPMENT OVERRIDES =====
+  
+  # API development with hot reload
+  api:
+    build:
+      target: development
+    volumes:
+      - .:/app
+      - /app/target
+    environment:
+      RUST_LOG: debug
+      RUST_BACKTRACE: full
+    command: cargo watch -x run
+
+  # Database with development settings
+  db:
+    environment:
+      POSTGRES_LOG_STATEMENT: all
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: 0
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c shared_buffers=128MB
+      -c work_mem=2MB
+      -c maintenance_work_mem=32MB
+      -c effective_cache_size=512MB
+      -c log_statement=all
+      -c log_min_duration_statement=0
+      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+
+  # MinIO with development settings
+  minio:
+    environment:
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    command: server /data --console-address ":9001" --address ":9000"
+
+  # Keycloak with development settings
+  keycloak:
+    environment:
+      KC_LOG_LEVEL: DEBUG
+      KC_HTTP_RELATIVE_PATH: /
+    command: >
+      start-dev
+      --http-port=8080
+      --hostname=localhost
+      --hostname-port=8080
+      --log-level=DEBUG
+
+  # Prometheus with shorter retention for dev
+  prometheus:
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=1d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+
+  # Grafana with development settings
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: true
+      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-worldmap-panel
+      GF_LOG_LEVEL: debug
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./ops/grafana/dev-dashboards:/var/lib/grafana/dev-dashboards:ro
+
+  # Redis with development settings
+  redis:
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --loglevel debug
+
+  # OpenSearch with development settings
+  opensearch:
+    environment:
+      - cluster.name=blacklake-dev-cluster
+      - node.name=blacklake-dev-node
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+      - "logger.level=DEBUG"
+
+  # MLflow with development settings
+  mlflow:
+    environment:
+      MLFLOW_TRACKING_URI: http://localhost:5000
+    command: >
+      bash -c "
+      pip install mlflow psycopg2-binary boto3 &&
+      mlflow server
+      --backend-store-uri=$$MLFLOW_BACKEND_STORE_URI
+      --default-artifact-root=$$MLFLOW_DEFAULT_ARTIFACT_ROOT
+      --host=0.0.0.0
+      --port=5000
+      --workers=1
+      "
+
+  # UI development with hot reload
+  ui-dev:
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+      VITE_OIDC_ISSUER: http://localhost:8081/realms/master
+      VITE_OIDC_CLIENT_ID: blacklake
+      VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
+      VITE_OIDC_SCOPE: openid profile email
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+      - /app/dist
+    command: pnpm dev --host 0.0.0.0
+
+  # ===== DEVELOPMENT TOOLS =====
+  
+  # Database admin tool
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    profiles: ["dev"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@blacklake.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - backplane
+
+  # Redis admin tool
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    profiles: ["dev"]
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - backplane
+
+  # Mailhog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    profiles: ["dev"]
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - backplane
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.49
+    profiles: ["dev"]
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "16686:16686"  # Web UI
+      - "14268:14268"  # HTTP collector
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    networks:
+      - backplane
+
+  # ===== TESTING SERVICES =====
+  
+  # Test database for integration tests
+  test-db:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: blacklake_test
+      POSTGRES_USER: blacklake_test
+      POSTGRES_PASSWORD: blacklake_test
+    ports:
+      - "5433:5432"
+    networks:
+      - backplane
+
+  # Test MinIO for integration tests
+  test-minio:
+    image: minio/minio:latest
+    profiles: ["test"]
+    environment:
+      MINIO_ROOT_USER: testminioadmin
+      MINIO_ROOT_PASSWORD: testminioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    networks:
+      - backplane

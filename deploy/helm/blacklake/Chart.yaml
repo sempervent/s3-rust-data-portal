@@ -1,0 +1,30 @@
+apiVersion: v2
+name: blacklake
+description: BlackLake Data Portal - Enterprise data portal with multi-tenant access controls
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/blacklake/blacklake
+sources:
+  - https://github.com/blacklake/blacklake
+maintainers:
+  - name: BlackLake Team
+    email: support@blacklake.dev
+keywords:
+  - data-portal
+  - data-governance
+  - multi-tenant
+  - enterprise
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: solr
+    version: "1.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: solr.enabled

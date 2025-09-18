@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blacklake-dev
+
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+  - service-patch.yaml
+  - ingress-patch.yaml
+
+configMapGenerator:
+  - name: blacklake-config
+    literals:
+      - API_BASE_URL=http://blacklake-dev.local
+      - UI_BASE_URL=http://blacklake-dev.local:3000
+      - RUST_LOG=debug
+      - SESSION_TIMEOUT=1800
+      - RATE_LIMIT_REQUESTS=500
+      - RATE_LIMIT_WINDOW=3600
+
+secretGenerator:
+  - name: blacklake-secrets
+    literals:
+      - database-url=postgresql://postgres:postgres@postgresql:5432/blacklake
+      - redis-url=redis://redis:6379
+      - solr-url=http://solr:8983
+      - s3-endpoint=http://minio:9000
+      - s3-access-key-id=minioadmin
+      - s3-secret-access-key=minioadmin
+      - s3-bucket=blacklake-dev
+      - jwt-secret=dev-jwt-secret-key
+
+commonLabels:
+  environment: dev
+  app.kubernetes.io/part-of: blacklake-dev

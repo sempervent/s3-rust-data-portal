@@ -1,0 +1,58 @@
+{
+  "name": "@blacklake/sdk",
+  "version": "0.1.0",
+  "description": "BlackLake Data Portal TypeScript SDK",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "data-portal",
+    "data-governance",
+    "multi-tenant",
+    "enterprise",
+    "typescript",
+    "sdk"
+  ],
+  "author": "BlackLake Team <support@blacklake.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blacklake/blacklake.git",
+    "directory": "sdks/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/blacklake/blacklake/issues"
+  },
+  "homepage": "https://blacklake.dev/docs",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "blacklake-retention",
+      "status": "Enabled",
+      "filter": {
+        "prefix": ""
+      },
+      "expiration": {
+        "days": 90
+      },
+      "noncurrentVersionExpiration": {
+        "noncurrentDays": 30
+      },
+      "abortIncompleteMultipartUpload": {
+        "daysAfterInitiation": 7
+      }
+    },
+    {
+      "id": "exports-retention",
+      "status": "Enabled",
+      "filter": {
+        "prefix": "exports/"
+      },
+      "expiration": {
+        "days": 30
+      },
+      "abortIncompleteMultipartUpload": {
+        "daysAfterInitiation": 1
+      }
+    },
+    {
+      "id": "mlflow-retention",
+      "status": "Enabled",
+      "filter": {
+        "prefix": "mlflow/"
+      },
+      "expiration": {
+        "days": 180
+      },
+      "noncurrentVersionExpiration": {
+        "noncurrentDays": 60
+      }
+    },
+    {
+      "id": "temp-cleanup",
+      "status": "Enabled",
+      "filter": {
+        "prefix": "temp/"
+      },
+      "expiration": {
+        "days": 1
+      }
+    }
+  ]
+}

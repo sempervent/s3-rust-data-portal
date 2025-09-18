@@ -11,6 +11,9 @@ A Rust-based, S3-backed, Git-style data artifact service for managing machine le
 - **RESTful API**: HTTP API with JWT/OIDC authentication
 - **Developer CLI**: Command-line interface for common operations
 - **Docker Compose**: Complete development environment with Postgres, MinIO, and Keycloak
+- **Multi-Arch Images**: AMD64 and ARM64 support with Docker Buildx
+- **Production Ready**: Comprehensive monitoring, security, and operations tooling
+- **Performance Testing**: K6-based load, stress, and spike testing
 
 ## Architecture
 
@@ -47,6 +50,89 @@ docker compose up -d --wait
 
 # Or using just
 just up
+```
+
+## Week 5: Production Operations
+
+BlackLake now includes comprehensive production-ready features:
+
+### Multi-Architecture Support
+
+Build and deploy on both AMD64 and ARM64 platforms:
+
+```bash
+# Build multi-arch images
+docker buildx bake all
+
+# Build and push to registry
+docker buildx bake --push all
+
+# Build specific targets
+docker buildx bake api ui
+```
+
+### Docker Compose Profiles
+
+Use different profiles for different environments:
+
+```bash
+# Development (default)
+docker compose --profile dev up -d
+
+# Production with monitoring
+docker compose --profile prod up -d
+
+# With OpenSearch
+docker compose --profile dev --profile search-os up -d
+
+# With antivirus scanning
+docker compose --profile dev --profile av up -d
+
+# With MLflow
+docker compose --profile dev --profile ml up -d
+```
+
+### Performance Testing
+
+Run comprehensive performance tests with K6:
+
+```bash
+# Load testing
+just k6-load
+
+# Stress testing
+just k6-stress
+
+# Spike testing
+just k6-spike
+
+# All tests
+just k6-all
+```
+
+### Monitoring & Observability
+
+Access monitoring dashboards:
+
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Jaeger**: http://localhost:16686 (development)
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+
+### Operations
+
+```bash
+# View logs
+just logs
+
+# Backup database
+just backup
+
+# Security scan
+just scan
+
+# Clean up
+just clean
 ```
 
 ### 3. Run Database Migrations
@@ -610,14 +696,48 @@ Copy `ui/env.example` to `ui/.env.development` and configure:
 - `VITE_OIDC_ISSUER`: OIDC provider URL (default: http://localhost:8081/realms/master)
 - `VITE_OIDC_CLIENT_ID`: OIDC client ID (default: blacklake)
 
-## Roadmap
+## Project Status
 
-- [x] Full OIDC/JWT authentication
-- [x] Advanced search with faceted filters
-- [x] Model format validation
-- [x] Data lineage tracking
-- [x] Backup and restore procedures
-- [x] Metrics and monitoring
-- [x] Web UI for repository browsing
-- [ ] Multi-tenant support
-- [ ] Advanced analytics dashboard
+**BlackLake has successfully completed Weeks 1-8 of the development roadmap and is production-ready.**
+
+### ✅ Completed Features (Weeks 1-8)
+
+- **Week 1**: Core Infrastructure - Rust API, PostgreSQL, S3 storage, Git-style version control
+- **Week 2**: Search & Metadata - JSONB search, Dublin Core schema, RDF generation
+- **Week 3**: Security & Multi-Tenancy - OIDC/JWT auth, RBAC, input validation, rate limiting
+- **Week 4**: Governance & Safety Rails - Branch protection, quotas, webhooks, exports
+- **Week 5**: Operational Hardening - Multi-arch builds, Docker Compose, monitoring, K6 testing
+- **Week 6**: Advanced Search & Sessions - Solr integration, server sessions, CSRF protection
+- **Week 7**: Enterprise Hardening - Multi-tenant ABAC, data classification, SDKs, Helm charts
+- **Week 8**: Federation & AI Features - External connectors, semantic search, mobile UX, compliance
+
+### 🔄 Carryover Items
+
+- **Week 9**: Reliability/DR, cost controls, governance hardening, documentation site (not implemented)
+- **Week 3**: Some security and infrastructure items remain as carryover
+
+### 📋 Future Roadmap
+
+See [TODO.md](TODO.md) for detailed carryover items and future enhancement ideas.
+
+## Documentation
+
+- **API Documentation**: Available at `/openapi.json` endpoint
+- **Operations Guide**: See [docs/OPERATIONS.md](docs/OPERATIONS.md)
+- **Deployment Guide**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **Search Documentation**: See [docs/SEARCH.md](docs/SEARCH.md)
+- **Session Management**: See [docs/SESSIONS.md](docs/SESSIONS.md)
+- **Image Management**: See [docs/IMAGES.md](docs/IMAGES.md)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Run `just test` and `just clippy`
+6. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

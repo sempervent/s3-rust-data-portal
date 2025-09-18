@@ -1,0 +1,21 @@
+[package]
+name = "blacklake-connectors"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tokio-postgres = "0.7"
+reqwest = { workspace = true }
+url = { workspace = true }
+rusoto_core = "0.48"
+rusoto_s3 = "0.48"
+rusoto_sts = "0.48"
+tracing = "0.1"

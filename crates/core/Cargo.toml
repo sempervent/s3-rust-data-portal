@@ -16,6 +16,19 @@ sophia = { workspace = true }
 regex = { workspace = true }
 url = { workspace = true }
 urlencoding = "2.1"
+hmac = "0.12"
+hex = "0.4"
+async-trait = "0.1"
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chrono", "uuid"] }
+apalis = { workspace = true }
+apalis-redis = { workspace = true }
+apalis-core = { workspace = true }
+tower-sessions = { workspace = true }
+tower-sessions-redis-store = { workspace = true }
+rand = { workspace = true }
+base64 = "0.21"
+hex = "0.4"
+reqwest = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.0"

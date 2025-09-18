@@ -1,0 +1,50 @@
+# BlackLake Solr Synonyms
+# Week 7: Solr relevance tuning
+
+# Data science terms
+data,dataset,datasets
+analysis,analytics,analyze
+model,models,modeling
+algorithm,algorithms
+machine learning,ml,ai,artificial intelligence
+deep learning,neural network,neural networks
+
+# File formats
+csv,comma separated values
+json,javascript object notation
+xml,extensible markup language
+parquet,columnar format
+avro,apache avro
+orc,optimized row columnar
+
+# Business terms
+kpi,key performance indicator,metrics
+dashboard,dashboards
+report,reports,reporting
+insight,insights
+trend,trends,trending
+forecast,forecasting,prediction
+
+# Technical terms
+api,application programming interface
+sdk,software development kit
+etl,extract transform load
+pipeline,pipelines,data pipeline
+workflow,workflows
+automation,automated
+
+# Data governance
+governance,data governance
+compliance,regulatory compliance
+audit,auditing,audit trail
+security,data security
+privacy,data privacy
+classification,data classification
+
+# Storage terms
+storage,data storage
+warehouse,data warehouse
+lake,data lake
+repository,repositories,repo
+archive,archives,archiving
+backup,backups,backing up

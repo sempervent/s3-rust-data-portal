@@ -1,0 +1,116 @@
+# BlackLake UI Multi-Stage Dockerfile
+# Week 5: Multi-architecture builds with optimization
+
+# ===== BUILD ARGUMENTS =====
+ARG REGISTRY=ghcr.io
+ARG IMAGE_PREFIX=blacklake
+ARG VERSION=latest
+ARG GIT_SHA=""
+ARG BUILD_DATE=""
+
+# ===== NODE BUILDER STAGE =====
+FROM node:20-alpine as builder
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies with cache
+RUN pnpm fetch
+
+# Copy source code
+COPY . .
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build the application
+RUN pnpm build
+
+# ===== NGINX RUNTIME STAGE =====
+FROM nginx:1.25-alpine as runtime
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy built application
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Create non-root user
+RUN addgroup -g 1001 -S blacklake && \
+    adduser -S blacklake -u 1001
+
+# Set ownership
+RUN chown -R blacklake:blacklake /usr/share/nginx/html && \
+    chown -R blacklake:blacklake /var/cache/nginx && \
+    chown -R blacklake:blacklake /var/log/nginx && \
+    chown -R blacklake:blacklake /etc/nginx/conf.d
+
+# Create nginx pid directory
+RUN mkdir -p /var/run/nginx && \
+    chown -R blacklake:blacklake /var/run/nginx
+
+# Switch to non-root user
+USER blacklake
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+# ===== DEVELOPMENT STAGE =====
+FROM node:20-alpine as development
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy source code
+COPY . .
+
+# Create non-root user
+RUN addgroup -g 1001 -S blacklake && \
+    adduser -S blacklake -u 1001
+
+# Set ownership
+RUN chown -R blacklake:blacklake /app
+
+# Switch to non-root user
+USER blacklake
+
+# Expose port
+EXPOSE 5173
+
+# Development command
+CMD ["pnpm", "dev", "--host", "0.0.0.0"]
+
+# ===== LABELS =====
+LABEL org.opencontainers.image.title="BlackLake UI"
+LABEL org.opencontainers.image.description="BlackLake Data Artifact Management UI"
+LABEL org.opencontainers.image.vendor="BlackLake"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_SHA}"
+LABEL org.opencontainers.image.source="https://github.com/blacklake/blacklake"
+LABEL org.opencontainers.image.licenses="MIT"

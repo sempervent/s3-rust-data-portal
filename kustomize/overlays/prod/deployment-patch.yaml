@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blacklake
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: blacklake
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+        env:
+        - name: RUST_LOG
+          value: "info"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: redis-url
+        - name: SOLR_URL
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: solr-url
+        - name: S3_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: s3-endpoint
+        - name: S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: s3-access-key-id
+        - name: S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: s3-secret-access-key
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: s3-bucket
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blacklake-secrets
+              key: jwt-secret

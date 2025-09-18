@@ -44,6 +44,89 @@ lazy_static::lazy_static! {
         "s3_operations_total",
         "Total number of S3 operations"
     ).unwrap();
+    
+    // Search metrics
+    pub static ref SEARCH_REQUESTS_TOTAL: Counter = Counter::new(
+        "search_requests_total",
+        "Total number of search requests"
+    ).unwrap();
+    
+    pub static ref SEARCH_REQUEST_DURATION: Histogram = Histogram::new(
+        "search_request_duration_seconds",
+        "Search request duration in seconds"
+    ).unwrap();
+    
+    pub static ref SEARCH_RESULTS_COUNT: Histogram = Histogram::new(
+        "search_results_count",
+        "Number of results returned by search queries"
+    ).unwrap();
+    
+    pub static ref SOLR_OPERATIONS_TOTAL: Counter = Counter::new(
+        "solr_operations_total",
+        "Total number of Solr operations"
+    ).unwrap();
+    
+    pub static ref SOLR_INDEX_DOCUMENTS_TOTAL: Counter = Counter::new(
+        "solr_index_documents_total",
+        "Total number of documents indexed in Solr"
+    ).unwrap();
+    
+    // Session metrics
+    pub static ref SESSION_CREATIONS_TOTAL: Counter = Counter::new(
+        "session_creations_total",
+        "Total number of session creations"
+    ).unwrap();
+    
+    pub static ref SESSION_DESTROYALS_TOTAL: Counter = Counter::new(
+        "session_destroyals_total",
+        "Total number of session destructions"
+    ).unwrap();
+    
+    pub static ref ACTIVE_SESSIONS: Gauge = Gauge::new(
+        "active_sessions",
+        "Number of active sessions"
+    ).unwrap();
+    
+    pub static ref CSRF_TOKEN_REQUESTS_TOTAL: Counter = Counter::new(
+        "csrf_token_requests_total",
+        "Total number of CSRF token requests"
+    ).unwrap();
+    
+    pub static ref CSRF_TOKEN_VALIDATIONS_TOTAL: Counter = Counter::new(
+        "csrf_token_validations_total",
+        "Total number of CSRF token validations"
+    ).unwrap();
+    
+    pub static ref CSRF_TOKEN_VALIDATION_FAILURES_TOTAL: Counter = Counter::new(
+        "csrf_token_validation_failures_total",
+        "Total number of CSRF token validation failures"
+    ).unwrap();
+    
+    // Job metrics
+    pub static ref JOB_ENQUEUED_TOTAL: Counter = Counter::new(
+        "job_enqueued_total",
+        "Total number of jobs enqueued"
+    ).unwrap();
+    
+    pub static ref JOB_PROCESSED_TOTAL: Counter = Counter::new(
+        "job_processed_total",
+        "Total number of jobs processed"
+    ).unwrap();
+    
+    pub static ref JOB_FAILED_TOTAL: Counter = Counter::new(
+        "job_failed_total",
+        "Total number of failed jobs"
+    ).unwrap();
+    
+    pub static ref JOB_PROCESSING_DURATION: Histogram = Histogram::new(
+        "job_processing_duration_seconds",
+        "Job processing duration in seconds"
+    ).unwrap();
+    
+    pub static ref QUEUE_SIZE: Gauge = Gauge::new(
+        "queue_size",
+        "Current size of job queues"
+    ).unwrap();
 }
 
 pub async fn liveness_check() -> (StatusCode, Json<serde_json::Value>) {
@@ -175,12 +258,34 @@ async fn check_storage(storage: &StorageClient) -> Result<(), String> {
 pub fn create_metrics_registry() -> Registry {
     let registry = Registry::new();
     
-    // Register metrics
+    // Register HTTP metrics
     registry.register(Box::new(HTTP_REQUESTS_TOTAL.clone())).unwrap();
     registry.register(Box::new(HTTP_REQUEST_DURATION.clone())).unwrap();
     registry.register(Box::new(ACTIVE_CONNECTIONS.clone())).unwrap();
     registry.register(Box::new(DATABASE_CONNECTIONS.clone())).unwrap();
     registry.register(Box::new(S3_OPERATIONS_TOTAL.clone())).unwrap();
+    
+    // Register search metrics
+    registry.register(Box::new(SEARCH_REQUESTS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(SEARCH_REQUEST_DURATION.clone())).unwrap();
+    registry.register(Box::new(SEARCH_RESULTS_COUNT.clone())).unwrap();
+    registry.register(Box::new(SOLR_OPERATIONS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(SOLR_INDEX_DOCUMENTS_TOTAL.clone())).unwrap();
+    
+    // Register session metrics
+    registry.register(Box::new(SESSION_CREATIONS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(SESSION_DESTROYALS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(ACTIVE_SESSIONS.clone())).unwrap();
+    registry.register(Box::new(CSRF_TOKEN_REQUESTS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(CSRF_TOKEN_VALIDATIONS_TOTAL.clone())).unwrap();
+    registry.register(Box::new(CSRF_TOKEN_VALIDATION_FAILURES_TOTAL.clone())).unwrap();
+    
+    // Register job metrics
+    registry.register(Box::new(JOB_ENQUEUED_TOTAL.clone())).unwrap();
+    registry.register(Box::new(JOB_PROCESSED_TOTAL.clone())).unwrap();
+    registry.register(Box::new(JOB_FAILED_TOTAL.clone())).unwrap();
+    registry.register(Box::new(JOB_PROCESSING_DURATION.clone())).unwrap();
+    registry.register(Box::new(QUEUE_SIZE.clone())).unwrap();
     
     registry
 }

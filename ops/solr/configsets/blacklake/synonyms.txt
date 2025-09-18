@@ -1,0 +1,48 @@
+# BlackLake Synonyms
+# Week 6: Domain-specific synonyms for data artifacts
+
+# Data formats
+csv,comma separated values,comma-separated values
+parquet,columnar format,columnar data
+json,javascript object notation
+xml,extensible markup language
+yaml,yaml ain't markup language,yml
+hdf5,hierarchical data format
+netcdf,network common data form
+
+# Machine learning
+ml,machine learning,artificial intelligence,ai
+model,ml model,ai model,neural network,deep learning
+training,model training,fit,learning
+inference,prediction,scoring,serving
+dataset,data set,training data,test data
+
+# Organizations
+ornl,oak ridge national laboratory,oak ridge
+anl,argonne national laboratory,argonne
+llnl,lawrence livermore national laboratory,lawrence livermore
+lbnl,lawrence berkeley national laboratory,lawrence berkeley
+nrel,national renewable energy laboratory
+pnnl,pacific northwest national laboratory
+
+# Data types
+tabular,table,spreadsheet,dataframe
+time series,temporal data,time-dependent
+geospatial,geographic,spatial,geo
+image,photo,picture,visual
+video,movie,film,multimedia
+audio,sound,acoustic
+
+# File operations
+upload,import,ingest,load
+download,export,extract,retrieve
+process,transform,convert,parse
+analyze,examine,investigate,explore
+visualize,plot,chart,graph
+
+# Metadata
+metadata,meta,attributes,properties
+schema,structure,format,layout
+version,revision,iteration,release
+tag,label,category,classification
+license,permission,rights,terms

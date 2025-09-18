@@ -616,3 +616,24 @@ mod metadata_tests {
 pub mod validation;
 pub mod merge;
 pub mod schema;
+pub mod governance;
+pub mod jobs;
+pub mod policy;
+pub mod search;
+pub mod sessions;
+pub mod embeddings;
+pub mod compliance;
+pub mod compliance_jobs;
+pub mod compliance_worker;
+pub mod observability;
+
+#[cfg(test)]
+mod governance_tests;
+#[cfg(test)]
+mod jobs_tests;
+#[cfg(test)]
+mod policy_tests;
+#[cfg(test)]
+mod sessions_tests;
+#[cfg(test)]
+mod search_tests;

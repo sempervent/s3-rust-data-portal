@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+  <!-- BlackLake Solr Configuration -->
+  
+  <!-- Data directory -->
+  <dataDir>${solr.data.dir:}</dataDir>
+  
+  <!-- Directory factory -->
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+  
+  <!-- Codec factory -->
+  <codecFactory class="solr.SchemaCodecFactory"/>
+  
+  <!-- Index config -->
+  <indexConfig>
+    <lockType>${solr.lock.type:native}</lockType>
+    <infoStream>false</infoStream>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+    <lockTimeout>1000</lockTimeout>
+    <unlockOnStartup>false</unlockOnStartup>
+    <termIndexInterval>128</termIndexInterval>
+    <reopenReaders>true</reopenReaders>
+    <ramBufferSizeMB>100</ramBufferSizeMB>
+    <maxBufferedDocs>1000</maxBufferedDocs>
+    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
+    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
+      <int name="maxMergeAtOnce">10</int>
+      <int name="segmentsPerTier">10</int>
+    </mergePolicy>
+  </indexConfig>
+  
+  <!-- JMX -->
+  <jmx />
+  
+  <!-- Update handler -->
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+      <openSearcher>false</openSearcher>
+    </autoCommit>
+    <autoSoftCommit>
+      <maxTime>${solr.autoSoftCommit.maxTime:1000}</maxTime>
+    </autoSoftCommit>
+  </updateHandler>
+  
+  <!-- Query parser -->
+  <queryParser name="standard" class="solr.StandardQueryParser" defaultOperator="AND"/>
+  
+  <!-- Request handlers -->
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+  
+  <requestHandler name="/query" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+  
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+    <lst name="defaults">
+      <str name="omitHeader">true</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+    </lst>
+  </requestHandler>
+  
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
+  
+  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
+    <lst name="defaults">
+      <str name="stream.contentType">application/json</str>
+    </lst>
+  </requestHandler>
+  
+  <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
+    <lst name="defaults">
+      <str name="stream.contentType">application/csv</str>
+    </lst>
+  </requestHandler>
+  
+  <!-- Suggest handler -->
+  <searchComponent name="suggest" class="solr.SuggestComponent">
+    <lst name="suggester">
+      <str name="name">file_name_suggest</str>
+      <str name="lookupImpl">AnalyzingInfixLookupFactory</str>
+      <str name="indexPath">suggest_file_name</str>
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>
+      <str name="field">file_name</str>
+      <str name="suggestAnalyzerFieldType">text_general</str>
+      <str name="buildOnStartup">false</str>
+    </lst>
+    <lst name="suggester">
+      <str name="name">tag_suggest</str>
+      <str name="lookupImpl">AnalyzingInfixLookupFactory</str>
+      <str name="indexPath">suggest_tags</str>
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>
+      <str name="field">tags</str>
+      <str name="suggestAnalyzerFieldType">string</str>
+      <str name="buildOnStartup">false</str>
+    </lst>
+  </searchComponent>
+  
+  <requestHandler name="/suggest" class="solr.SearchHandler" startup="lazy">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+      <str name="suggest.count">10</str>
+    </lst>
+    <arr name="components">
+      <str>suggest</str>
+    </arr>
+  </requestHandler>
+  
+  <!-- Export handler -->
+  <requestHandler name="/export" class="solr.ExportHandler">
+    <lst name="invariants">
+      <str name="rq">{!xport}</str>
+      <str name="wt">xsort</str>
+      <str name="distrib">false</str>
+    </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+  </requestHandler>
+  
+  <!-- Admin handlers -->
+  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+    <lst name="invariants">
+      <str name="q">solrpingquery</str>
+    </lst>
+    <lst name="defaults">
+      <str name="echoParams">all</str>
+    </lst>
+  </requestHandler>
+  
+  <requestHandler name="/admin/system" class="org.apache.solr.handler.admin.SystemInfoHandler"/>
+  
+  <requestHandler name="/admin/threads" class="org.apache.solr.handler.admin.ThreadDumpHandler"/>
+  
+  <requestHandler name="/admin/properties" class="org.apache.solr.handler.admin.PropertiesRequestHandler"/>
+  
+  <requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" />
+  
+  <!-- Health check -->
+  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+    <lst name="invariants">
+      <str name="q">solrpingquery</str>
+    </lst>
+    <lst name="defaults">
+      <str name="echoParams">all</str>
+    </lst>
+  </requestHandler>
+  
+  <!-- Response writers -->
+  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
+    <str name="content-type">application/json; charset=UTF-8</str>
+  </queryResponseWriter>
+  
+  <queryResponseWriter name="xml" class="solr.XMLResponseWriter">
+    <str name="content-type">text/xml; charset=UTF-8</str>
+  </queryResponseWriter>
+  
+  <queryResponseWriter name="csv" class="solr.CSVResponseWriter">
+    <str name="content-type">text/csv; charset=UTF-8</str>
+  </queryResponseWriter>
+  
+  <!-- Value source parser -->
+  <valueSourceParser name="json" class="solr.FunctionValueSourceParser" />
+  
+  <!-- Transformer -->
+  <transformer name="db" class="com.thoughtworks.xstream.io.json.JsonWriter" />
+  
+  <!-- Cache configurations -->
+  <filterCache class="solr.FastLRUCache" size="512" initialSize="512" autowarmCount="0"/>
+  
+  <queryResultCache class="solr.LRUCache" size="512" initialSize="512" autowarmCount="0"/>
+  
+  <documentCache class="solr.LRUCache" size="512" initialSize="512" autowarmCount="0"/>
+  
+  <fieldValueCache class="solr.FastLRUCache" size="512" autowarmCount="128" showItems="32"/>
+  
+  <!-- Request dispatcher -->
+  <requestDispatcher handleSelect="false">
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048000" formdataUploadLimitInKB="2048" addHttpRequestToContext="false"/>
+    <httpCaching never304="true"/>
+  </requestDispatcher>
+  
+  <!-- Request logger -->
+  <requestHandler name="/admin/logging" class="org.apache.solr.handler.admin.LoggingHandler"/>
+  
+  <!-- JMX -->
+  <jmx />
+  
+  <!-- Metrics -->
+  <metrics>
+    <reporter name="graphite" class="org.apache.solr.metrics.reporters.SolrGraphiteReporter">
+      <str name="host">localhost</str>
+      <int name="port">2003</int>
+      <str name="prefix">solr</str>
+    </reporter>
+  </metrics>
+</config>

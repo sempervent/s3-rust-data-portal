@@ -1,0 +1,15 @@
+# Grafana Dashboard Provisioning Configuration
+# Week 5: Automatic dashboard loading
+
+apiVersion: 1
+
+providers:
+  - name: 'blacklake-dashboards'
+    orgId: 1
+    folder: 'BlackLake'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

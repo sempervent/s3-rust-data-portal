@@ -2,6 +2,7 @@ import React from 'react'
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { UserManager, User } from 'oidc-client-ts'
+import { api } from '@/lib/api'
 
 const userManager = new UserManager({
   authority: import.meta.env.VITE_OIDC_ISSUER || 'http://localhost:8081/realms/master',
@@ -31,12 +32,17 @@ interface AuthState {
   user: AuthUser | null
   isAuthenticated: boolean
   isLoading: boolean
+  csrfToken: string | null
+  authMethod: 'oidc' | 'session'
   
   // Actions
   signinRedirect: () => Promise<void>
   signoutRedirect: () => Promise<void>
   handleCallback: () => Promise<void>
   initialize: () => Promise<void>
+  createSession: (oidcToken: string) => Promise<void>
+  getCsrfToken: () => Promise<string>
+  logout: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -45,6 +51,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: true,
+      csrfToken: null,
+      authMethod: 'session', // Default to session-based auth for web UI
 
       signinRedirect: async () => {
         try {
@@ -79,6 +87,9 @@ export const useAuthStore = create<AuthState>()(
             },
             access_token: oidcUser.access_token,
           }
+          
+          // Create session with OIDC token
+          await get().createSession(oidcUser.access_token)
           
           set({
             user,
@@ -120,6 +131,69 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Auth initialization failed:', error)
           set({ isLoading: false })
+        }
+      },
+
+      createSession: async (oidcToken: string) => {
+        try {
+          const response = await api.post('/v1/session/login', {
+            oidc_token: oidcToken
+          })
+          
+          if (response.data.success) {
+            // Get CSRF token for future requests
+            await get().getCsrfToken()
+          }
+        } catch (error) {
+          console.error('Session creation failed:', error)
+          throw error
+        }
+      },
+
+      getCsrfToken: async () => {
+        try {
+          const response = await api.get('/v1/csrf')
+          const csrfToken = response.data.data.csrf_token
+          set({ csrfToken })
+          return csrfToken
+        } catch (error) {
+          console.error('CSRF token retrieval failed:', error)
+          throw error
+        }
+      },
+
+      logout: async () => {
+        try {
+          // Get CSRF token if not available
+          let csrfToken = get().csrfToken
+          if (!csrfToken) {
+            csrfToken = await get().getCsrfToken()
+          }
+
+          // Logout from session
+          await api.post('/v1/session/logout', {}, {
+            headers: {
+              'x-csrf-token': csrfToken
+            }
+          })
+
+          // Clear local state
+          set({
+            user: null,
+            isAuthenticated: false,
+            csrfToken: null
+          })
+
+          // Also logout from OIDC
+          await get().signoutRedirect()
+        } catch (error) {
+          console.error('Logout failed:', error)
+          // Clear local state even if server logout fails
+          set({
+            user: null,
+            isAuthenticated: false,
+            csrfToken: null
+          })
         }
       },
     }),

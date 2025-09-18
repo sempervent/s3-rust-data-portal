@@ -11,12 +11,20 @@ export const api: AxiosInstance = axios.create({
   },
 })
 
-// Request interceptor to add auth token and request ID
+// Request interceptor to add auth token, CSRF token, and request ID
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore.getState()
-    if (authStore.user?.access_token) {
+    
+    // Add OIDC bearer token for CLI/API compatibility
+    if (authStore.user?.access_token && authStore.authMethod === 'oidc') {
       config.headers.Authorization = `Bearer ${authStore.user.access_token}`
+    }
+    
+    // Add CSRF token for session-based requests (state-changing methods)
+    if (authStore.authMethod === 'session' && authStore.csrfToken && 
+        ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase() || '')) {
+      config.headers['x-csrf-token'] = authStore.csrfToken
     }
     
     // Add request ID for tracing
@@ -32,10 +40,29 @@ api.interceptors.request.use(
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       const authStore = useAuthStore.getState()
-      authStore.signoutRedirect()
+      if (authStore.authMethod === 'session') {
+        // For session-based auth, try to logout gracefully
+        await authStore.logout()
+      } else {
+        // For OIDC auth, redirect to logout
+        authStore.signoutRedirect()
+      }
+    } else if (error.response?.status === 403 && error.response?.data?.error?.includes('CSRF')) {
+      // CSRF token mismatch - try to refresh token
+      const authStore = useAuthStore.getState()
+      if (authStore.authMethod === 'session') {
+        try {
+          await authStore.getCsrfToken()
+          // Retry the original request
+          return api.request(error.config)
+        } catch (csrfError) {
+          console.error('CSRF token refresh failed:', csrfError)
+          await authStore.logout()
+        }
+      }
     }
     return Promise.reject(error)
   }

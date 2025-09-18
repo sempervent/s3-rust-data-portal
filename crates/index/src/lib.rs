@@ -1,10 +1,14 @@
 use blacklake_core::{
-    Acl, AuditLog, ArtifactRdf, Change, Commit, Entry, EntryMetaIndex, Object, Permission, 
+    Acl, AuditLog, ArtifactRdf, Change, Commit, Entry, EntryMetaIndex, Object, Permission,
     Reference, ReferenceKind, Repository, RdfFormat,
+    // Governance types
+    ProtectedRef, RepoQuota, RepoUsage, RepoRetention, Webhook, WebhookDelivery, WebhookDead,
+    ExportJob, ExportManifest, ExportJobStatus, CheckResult, CheckStatus, QuotaStatus,
+    WebhookEvent, RetentionPolicy, WebhookPayload,
 };
 use chrono::Utc;
 use sqlx::{PgPool, Postgres, Row};
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr, time::SystemTime, time::UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -658,5 +662,984 @@ impl IndexClient {
         // TODO: Implement dynamic query building with proper parameter binding
         // For now, return empty results
         Ok((vec![], 0))
+    }
+
+    // ===== GOVERNANCE METHODS =====
+
+    /// Get branch protection rules for a repository reference
+    pub async fn get_protected_ref(&self, repo_id: Uuid, ref_name: &str) -> Result<Option<ProtectedRef>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, ref_name, require_admin, allow_fast_forward, allow_delete, 
+                    required_checks, required_reviewers, require_schema_pass, created_at, updated_at
+             FROM protected_refs 
+             WHERE repo_id = $1 AND ref_name = $2",
+            repo_id,
+            ref_name
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| ProtectedRef {
+            id: r.id,
+            repo_id: r.repo_id,
+            ref_name: r.ref_name,
+            require_admin: r.require_admin,
+            allow_fast_forward: r.allow_fast_forward,
+            allow_delete: r.allow_delete,
+            required_checks: serde_json::from_value(r.required_checks).unwrap_or_default(),
+            required_reviewers: r.required_reviewers as u32,
+            require_schema_pass: r.require_schema_pass,
+        }))
+    }
+
+    /// Set branch protection rules for a repository reference
+    pub async fn set_protected_ref(&self, protected_ref: &ProtectedRef) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO protected_refs (id, repo_id, ref_name, require_admin, allow_fast_forward, 
+                                        allow_delete, required_checks, required_reviewers, require_schema_pass)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             ON CONFLICT (repo_id, ref_name) 
+             DO UPDATE SET require_admin = $4, allow_fast_forward = $5, allow_delete = $6,
+                          required_checks = $7, required_reviewers = $8, require_schema_pass = $9,
+                          updated_at = NOW()",
+            protected_ref.id,
+            protected_ref.repo_id,
+            protected_ref.ref_name,
+            protected_ref.require_admin,
+            protected_ref.allow_fast_forward,
+            protected_ref.allow_delete,
+            serde_json::to_value(&protected_ref.required_checks)?,
+            protected_ref.required_reviewers as i32,
+            protected_ref.require_schema_pass
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get repository quota configuration
+    pub async fn get_repo_quota(&self, repo_id: Uuid) -> Result<Option<RepoQuota>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, bytes_soft, bytes_hard, created_at, updated_at
+             FROM repo_quota 
+             WHERE repo_id = $1",
+            repo_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| RepoQuota {
+            id: r.id,
+            repo_id: r.repo_id,
+            bytes_soft: r.bytes_soft as u64,
+            bytes_hard: r.bytes_hard as u64,
+        }))
+    }
+
+    /// Set repository quota configuration
+    pub async fn set_repo_quota(&self, quota: &RepoQuota) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO repo_quota (id, repo_id, bytes_soft, bytes_hard)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (repo_id) 
+             DO UPDATE SET bytes_soft = $3, bytes_hard = $4, updated_at = NOW()",
+            quota.id,
+            quota.repo_id,
+            quota.bytes_soft as i64,
+            quota.bytes_hard as i64
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get repository usage
+    pub async fn get_repo_usage(&self, repo_id: Uuid) -> Result<Option<RepoUsage>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, current_bytes, last_calculated
+             FROM repo_usage 
+             WHERE repo_id = $1",
+            repo_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| RepoUsage {
+            id: r.id,
+            repo_id: r.repo_id,
+            current_bytes: r.current_bytes as u64,
+            last_calculated: r.last_calculated,
+        }))
+    }
+
+    /// Update repository usage
+    pub async fn update_repo_usage(&self, repo_id: Uuid, current_bytes: u64) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO repo_usage (repo_id, current_bytes, last_calculated)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (repo_id) 
+             DO UPDATE SET current_bytes = $2, last_calculated = NOW()",
+            repo_id,
+            current_bytes as i64
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get quota status for a repository
+    pub async fn get_quota_status(&self, repo_id: Uuid) -> Result<Option<QuotaStatus>> {
+        let row = sqlx::query!(
+            "SELECT q.bytes_soft, q.bytes_hard, u.current_bytes
+             FROM repo_quota q
+             LEFT JOIN repo_usage u ON q.repo_id = u.repo_id
+             WHERE q.repo_id = $1",
+            repo_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| QuotaStatus::new(
+            r.current_bytes.unwrap_or(0) as u64,
+            r.bytes_soft as u64,
+            r.bytes_hard as u64,
+        )))
+    }
+
+    /// Get retention policy for a repository
+    pub async fn get_repo_retention(&self, repo_id: Uuid) -> Result<Option<RepoRetention>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, retention_policy, created_at, updated_at
+             FROM repo_retention 
+             WHERE repo_id = $1",
+            repo_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| RepoRetention {
+            id: r.id,
+            repo_id: r.repo_id,
+            retention_policy: serde_json::from_value(r.retention_policy).unwrap_or_else(|_| RetentionPolicy {
+                tombstone_days: 30,
+                hard_delete_days: 90,
+                legal_hold: false,
+            }),
+        }))
+    }
+
+    /// Set retention policy for a repository
+    pub async fn set_repo_retention(&self, retention: &RepoRetention) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO repo_retention (id, repo_id, retention_policy)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (repo_id) 
+             DO UPDATE SET retention_policy = $3, updated_at = NOW()",
+            retention.id,
+            retention.repo_id,
+            serde_json::to_value(&retention.retention_policy)?
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Create a webhook
+    pub async fn create_webhook(&self, webhook: &Webhook) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO webhooks (id, repo_id, url, secret, events, active)
+             VALUES ($1, $2, $3, $4, $5, $6)",
+            webhook.id,
+            webhook.repo_id,
+            webhook.url,
+            webhook.secret,
+            serde_json::to_value(&webhook.events)?,
+            webhook.active
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get webhooks for a repository
+    pub async fn get_webhooks(&self, repo_id: Uuid) -> Result<Vec<Webhook>> {
+        let rows = sqlx::query!(
+            "SELECT id, repo_id, url, secret, events, active, created_at, updated_at
+             FROM webhooks 
+             WHERE repo_id = $1 AND active = true
+             ORDER BY created_at",
+            repo_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let webhooks = rows.into_iter().map(|r| Webhook {
+            id: r.id,
+            repo_id: r.repo_id,
+            url: r.url,
+            secret: r.secret,
+            events: serde_json::from_value(r.events).unwrap_or_default(),
+            active: r.active,
+        }).collect();
+
+        Ok(webhooks)
+    }
+
+    /// Get webhook by ID
+    pub async fn get_webhook(&self, webhook_id: Uuid) -> Result<Option<Webhook>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, url, secret, events, active, created_at, updated_at
+             FROM webhooks 
+             WHERE id = $1",
+            webhook_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| Webhook {
+            id: r.id,
+            repo_id: r.repo_id,
+            url: r.url,
+            secret: r.secret,
+            events: serde_json::from_value(r.events).unwrap_or_default(),
+            active: r.active,
+        }))
+    }
+
+    /// Delete a webhook
+    pub async fn delete_webhook(&self, webhook_id: Uuid) -> Result<()> {
+        sqlx::query!(
+            "DELETE FROM webhooks WHERE id = $1",
+            webhook_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Create a webhook delivery attempt
+    pub async fn create_webhook_delivery(&self, delivery: &WebhookDelivery) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO webhook_deliveries (id, webhook_id, event_type, payload, response_status, 
+                                           response_body, attempts, max_attempts, next_retry_at, delivered_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            delivery.id,
+            delivery.webhook_id,
+            delivery.event_type,
+            delivery.payload,
+            delivery.response_status.map(|s| s as i32),
+            delivery.response_body,
+            delivery.attempts as i32,
+            delivery.max_attempts as i32,
+            delivery.next_retry_at,
+            delivery.delivered_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get pending webhook deliveries for retry
+    pub async fn get_pending_webhook_deliveries(&self) -> Result<Vec<WebhookDelivery>> {
+        let rows = sqlx::query!(
+            "SELECT id, webhook_id, event_type, payload, response_status, response_body, 
+                    attempts, max_attempts, next_retry_at, delivered_at, created_at
+             FROM webhook_deliveries 
+             WHERE next_retry_at IS NOT NULL AND next_retry_at <= NOW() AND delivered_at IS NULL
+             ORDER BY next_retry_at
+             LIMIT 100"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let deliveries = rows.into_iter().map(|r| WebhookDelivery {
+            id: r.id,
+            webhook_id: r.webhook_id,
+            event_type: r.event_type,
+            payload: r.payload,
+            response_status: r.response_status.map(|s| s as u16),
+            response_body: r.response_body,
+            attempts: r.attempts as u32,
+            max_attempts: r.max_attempts as u32,
+            next_retry_at: r.next_retry_at,
+            delivered_at: r.delivered_at,
+        }).collect();
+
+        Ok(deliveries)
+    }
+
+    /// Create an export job
+    pub async fn create_export_job(&self, job: &ExportJob) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO export_jobs (id, repo_id, user_id, manifest, status, s3_key, download_url, error_message)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            job.id,
+            job.repo_id,
+            job.user_id,
+            serde_json::to_value(&job.manifest)?,
+            serde_json::to_value(&job.status)?,
+            job.s3_key,
+            job.download_url,
+            job.error_message
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get export job by ID
+    pub async fn get_export_job(&self, job_id: Uuid) -> Result<Option<ExportJob>> {
+        let row = sqlx::query!(
+            "SELECT id, repo_id, user_id, manifest, status, s3_key, download_url, error_message, created_at, updated_at
+             FROM export_jobs 
+             WHERE id = $1",
+            job_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| ExportJob {
+            id: r.id,
+            repo_id: r.repo_id,
+            user_id: r.user_id,
+            manifest: serde_json::from_value(r.manifest).unwrap_or_else(|_| ExportManifest {
+                ref_name: "main".to_string(),
+                paths: vec![],
+                include_meta: true,
+                include_rdf: false,
+            }),
+            status: serde_json::from_value(r.status).unwrap_or(ExportJobStatus::Pending),
+            s3_key: r.s3_key,
+            download_url: r.download_url,
+            error_message: r.error_message,
+        }))
+    }
+
+    /// Update export job status
+    pub async fn update_export_job_status(&self, job_id: Uuid, status: ExportJobStatus, 
+                                         s3_key: Option<String>, download_url: Option<String>, 
+                                         error_message: Option<String>) -> Result<()> {
+        sqlx::query!(
+            "UPDATE export_jobs 
+             SET status = $2, s3_key = $3, download_url = $4, error_message = $5, updated_at = NOW()
+             WHERE id = $1",
+            job_id,
+            serde_json::to_value(&status)?,
+            s3_key,
+            download_url,
+            error_message
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Submit a check result
+    pub async fn submit_check_result(&self, check: &CheckResult) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO check_results (id, repo_id, ref_name, commit_id, check_name, status, details_url, output)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (repo_id, ref_name, commit_id, check_name) 
+             DO UPDATE SET status = $6, details_url = $7, output = $8, updated_at = NOW()",
+            check.id,
+            check.repo_id,
+            check.ref_name,
+            check.commit_id,
+            check.check_name,
+            serde_json::to_value(&check.status)?,
+            check.details_url,
+            check.output
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get check results for a commit
+    pub async fn get_check_results(&self, repo_id: Uuid, ref_name: &str, commit_id: Uuid) -> Result<Vec<CheckResult>> {
+        let rows = sqlx::query!(
+            "SELECT id, repo_id, ref_name, commit_id, check_name, status, details_url, output, created_at, updated_at
+             FROM check_results 
+             WHERE repo_id = $1 AND ref_name = $2 AND commit_id = $3
+             ORDER BY created_at",
+            repo_id,
+            ref_name,
+            commit_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let checks = rows.into_iter().map(|r| CheckResult {
+            id: r.id,
+            repo_id: r.repo_id,
+            ref_name: r.ref_name,
+            commit_id: r.commit_id,
+            check_name: r.check_name,
+            status: serde_json::from_value(r.status).unwrap_or(CheckStatus::Pending),
+            details_url: r.details_url,
+            output: r.output,
+        }).collect();
+
+        Ok(checks)
+    }
+
+    // ===== WEBHOOK METHODS =====
+
+    /// Create a webhook
+    pub async fn create_webhook(&self, webhook: &Webhook) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            INSERT INTO webhooks (id, repo_id, url, secret, events, active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "#,
+            webhook.id,
+            webhook.repo_id,
+            webhook.url,
+            webhook.secret,
+            serde_json::to_value(&webhook.events)?,
+            webhook.active,
+            webhook.created_at,
+            webhook.updated_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get webhook by ID
+    pub async fn get_webhook(&self, webhook_id: Uuid) -> Result<Webhook, IndexError> {
+        let row = sqlx::query!(
+            r#"
+            SELECT id, repo_id, url, secret, events, active, created_at, updated_at
+            FROM webhooks
+            WHERE id = $1
+            "#,
+            webhook_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let webhook = Webhook {
+            id: row.id,
+            repo_id: row.repo_id,
+            url: row.url,
+            secret: row.secret,
+            events: serde_json::from_value(row.events)?,
+            active: row.active,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        };
+
+        Ok(webhook)
+    }
+
+    /// Get webhooks for a repository
+    pub async fn get_webhooks(&self, repo_id: Uuid) -> Result<Vec<Webhook>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, repo_id, url, secret, events, active, created_at, updated_at
+            FROM webhooks
+            WHERE repo_id = $1 AND active = true
+            ORDER BY created_at DESC
+            "#,
+            repo_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let webhooks = rows
+            .into_iter()
+            .map(|row| Webhook {
+                id: row.id,
+                repo_id: row.repo_id,
+                url: row.url,
+                secret: row.secret,
+                events: serde_json::from_value(row.events).unwrap_or_default(),
+                active: row.active,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            })
+            .collect();
+
+        Ok(webhooks)
+    }
+
+    /// Delete a webhook
+    pub async fn delete_webhook(&self, webhook_id: Uuid) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            DELETE FROM webhooks WHERE id = $1
+            "#,
+            webhook_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Create webhook delivery
+    pub async fn create_webhook_delivery(&self, delivery: &WebhookDelivery) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            INSERT INTO webhook_deliveries (
+                id, webhook_id, event, payload, status, attempts, last_attempt_at,
+                next_retry_at, response_status, response_body, error_message, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            "#,
+            delivery.id,
+            delivery.webhook_id,
+            delivery.event.to_string(),
+            delivery.payload,
+            delivery.status,
+            delivery.attempts,
+            delivery.last_attempt_at,
+            delivery.next_retry_at,
+            delivery.response_status,
+            delivery.response_body,
+            delivery.error_message,
+            delivery.created_at,
+            delivery.updated_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Update webhook delivery
+    pub async fn update_webhook_delivery(&self, delivery: &WebhookDelivery) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            UPDATE webhook_deliveries SET
+                status = $2, attempts = $3, last_attempt_at = $4, next_retry_at = $5,
+                response_status = $6, response_body = $7, error_message = $8, updated_at = $9
+            WHERE id = $1
+            "#,
+            delivery.id,
+            delivery.status,
+            delivery.attempts,
+            delivery.last_attempt_at,
+            delivery.next_retry_at,
+            delivery.response_status,
+            delivery.response_body,
+            delivery.error_message,
+            delivery.updated_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get webhook delivery by ID
+    pub async fn get_webhook_delivery(&self, delivery_id: Uuid) -> Result<WebhookDelivery, IndexError> {
+        let row = sqlx::query!(
+            r#"
+            SELECT id, webhook_id, event, payload, status, attempts, last_attempt_at,
+                   next_retry_at, response_status, response_body, error_message, created_at, updated_at
+            FROM webhook_deliveries
+            WHERE id = $1
+            "#,
+            delivery_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let delivery = WebhookDelivery {
+            id: row.id,
+            webhook_id: row.webhook_id,
+            event: WebhookEvent::from_str(&row.event).unwrap_or(WebhookEvent::Test),
+            payload: row.payload,
+            status: row.status,
+            attempts: row.attempts,
+            last_attempt_at: row.last_attempt_at,
+            next_retry_at: row.next_retry_at,
+            response_status: row.response_status,
+            response_body: row.response_body,
+            error_message: row.error_message,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        };
+
+        Ok(delivery)
+    }
+
+    /// Get pending webhook deliveries
+    pub async fn get_pending_webhook_deliveries(&self) -> Result<Vec<WebhookDelivery>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, webhook_id, event, payload, status, attempts, last_attempt_at,
+                   next_retry_at, response_status, response_body, error_message, created_at, updated_at
+            FROM webhook_deliveries
+            WHERE status IN ('pending', 'failed') AND (next_retry_at IS NULL OR next_retry_at <= $1)
+            ORDER BY created_at ASC
+            LIMIT 100
+            "#,
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let deliveries = rows
+            .into_iter()
+            .map(|row| WebhookDelivery {
+                id: row.id,
+                webhook_id: row.webhook_id,
+                event: WebhookEvent::from_str(&row.event).unwrap_or(WebhookEvent::Test),
+                payload: row.payload,
+                status: row.status,
+                attempts: row.attempts,
+                last_attempt_at: row.last_attempt_at,
+                next_retry_at: row.next_retry_at,
+                response_status: row.response_status,
+                response_body: row.response_body,
+                error_message: row.error_message,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            })
+            .collect();
+
+        Ok(deliveries)
+    }
+
+    /// Get webhook deliveries for a webhook
+    pub async fn get_webhook_deliveries(&self, webhook_id: Uuid) -> Result<Vec<WebhookDelivery>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, webhook_id, event, payload, status, attempts, last_attempt_at,
+                   next_retry_at, response_status, response_body, error_message, created_at, updated_at
+            FROM webhook_deliveries
+            WHERE webhook_id = $1
+            ORDER BY created_at DESC
+            LIMIT 100
+            "#,
+            webhook_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let deliveries = rows
+            .into_iter()
+            .map(|row| WebhookDelivery {
+                id: row.id,
+                webhook_id: row.webhook_id,
+                event: WebhookEvent::from_str(&row.event).unwrap_or(WebhookEvent::Test),
+                payload: row.payload,
+                status: row.status,
+                attempts: row.attempts,
+                last_attempt_at: row.last_attempt_at,
+                next_retry_at: row.next_retry_at,
+                response_status: row.response_status,
+                response_body: row.response_body,
+                error_message: row.error_message,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            })
+            .collect();
+
+        Ok(deliveries)
+    }
+
+    /// Delete webhook delivery
+    pub async fn delete_webhook_delivery(&self, delivery_id: Uuid) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            DELETE FROM webhook_deliveries WHERE id = $1
+            "#,
+            delivery_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Create webhook dead letter record
+    pub async fn create_webhook_dead(&self, dead: &WebhookDead) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            INSERT INTO webhook_dead (id, webhook_id, event, payload, attempts, last_error, created_at, moved_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "#,
+            dead.id,
+            dead.webhook_id,
+            dead.event.to_string(),
+            dead.payload,
+            dead.attempts,
+            dead.last_error,
+            dead.created_at,
+            dead.moved_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get webhook dead letter records for a repository
+    pub async fn get_webhook_dead_letter(&self, repo_id: Uuid) -> Result<Vec<WebhookDead>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT wd.id, wd.webhook_id, wd.event, wd.payload, wd.attempts, wd.last_error, wd.created_at, wd.moved_at
+            FROM webhook_dead wd
+            JOIN webhooks w ON wd.webhook_id = w.id
+            WHERE w.repo_id = $1
+            ORDER BY wd.moved_at DESC
+            LIMIT 100
+            "#,
+            repo_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let dead_webhooks = rows
+            .into_iter()
+            .map(|row| WebhookDead {
+                id: row.id,
+                webhook_id: row.webhook_id,
+                event: WebhookEvent::from_str(&row.event).unwrap_or(WebhookEvent::Test),
+                payload: row.payload,
+                attempts: row.attempts,
+                last_error: row.last_error,
+                created_at: row.created_at,
+                moved_at: row.moved_at,
+            })
+            .collect();
+
+        Ok(dead_webhooks)
+    }
+
+    // ===== EXPORT JOB METHODS =====
+
+    /// Create export job
+    pub async fn create_export_job(&self, job: &ExportJob) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            INSERT INTO export_jobs (
+                id, repo_id, manifest, status, progress, total_items, processed_items,
+                output_size, download_url, error_message, created_at, started_at,
+                completed_at, expires_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            "#,
+            job.id,
+            job.repo_id,
+            serde_json::to_value(&job.manifest)?,
+            job.status.to_string(),
+            job.progress,
+            job.total_items,
+            job.processed_items,
+            job.output_size,
+            job.download_url,
+            job.error_message,
+            job.created_at,
+            job.started_at,
+            job.completed_at,
+            job.expires_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get export job by ID
+    pub async fn get_export_job(&self, job_id: Uuid) -> Result<ExportJob, IndexError> {
+        let row = sqlx::query!(
+            r#"
+            SELECT id, repo_id, manifest, status, progress, total_items, processed_items,
+                   output_size, download_url, error_message, created_at, started_at,
+                   completed_at, expires_at
+            FROM export_jobs
+            WHERE id = $1
+            "#,
+            job_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let job = ExportJob {
+            id: row.id,
+            repo_id: row.repo_id,
+            manifest: serde_json::from_value(row.manifest)?,
+            status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
+            progress: row.progress,
+            total_items: row.total_items,
+            processed_items: row.processed_items,
+            output_size: row.output_size,
+            download_url: row.download_url,
+            error_message: row.error_message,
+            created_at: row.created_at,
+            started_at: row.started_at,
+            completed_at: row.completed_at,
+            expires_at: row.expires_at,
+        };
+
+        Ok(job)
+    }
+
+    /// Update export job status
+    pub async fn update_export_job_status(&self, job: &ExportJob) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            UPDATE export_jobs SET
+                status = $2, progress = $3, total_items = $4, processed_items = $5,
+                output_size = $6, download_url = $7, error_message = $8,
+                started_at = $9, completed_at = $10
+            WHERE id = $1
+            "#,
+            job.id,
+            job.status.to_string(),
+            job.progress,
+            job.total_items,
+            job.processed_items,
+            job.output_size,
+            job.download_url,
+            job.error_message,
+            job.started_at,
+            job.completed_at
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get pending export jobs
+    pub async fn get_pending_export_jobs(&self) -> Result<Vec<ExportJob>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, repo_id, manifest, status, progress, total_items, processed_items,
+                   output_size, download_url, error_message, created_at, started_at,
+                   completed_at, expires_at
+            FROM export_jobs
+            WHERE status = 'pending'
+            ORDER BY created_at ASC
+            LIMIT 10
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let jobs = rows
+            .into_iter()
+            .map(|row| ExportJob {
+                id: row.id,
+                repo_id: row.repo_id,
+                manifest: serde_json::from_value(row.manifest).unwrap_or_default(),
+                status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
+                progress: row.progress,
+                total_items: row.total_items,
+                processed_items: row.processed_items,
+                output_size: row.output_size,
+                download_url: row.download_url,
+                error_message: row.error_message,
+                created_at: row.created_at,
+                started_at: row.started_at,
+                completed_at: row.completed_at,
+                expires_at: row.expires_at,
+            })
+            .collect();
+
+        Ok(jobs)
+    }
+
+    /// Get expired export jobs
+    pub async fn get_expired_export_jobs(&self, now: u64) -> Result<Vec<ExportJob>, IndexError> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, repo_id, manifest, status, progress, total_items, processed_items,
+                   output_size, download_url, error_message, created_at, started_at,
+                   completed_at, expires_at
+            FROM export_jobs
+            WHERE expires_at < $1
+            ORDER BY expires_at ASC
+            "#,
+            now
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let jobs = rows
+            .into_iter()
+            .map(|row| ExportJob {
+                id: row.id,
+                repo_id: row.repo_id,
+                manifest: serde_json::from_value(row.manifest).unwrap_or_default(),
+                status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
+                progress: row.progress,
+                total_items: row.total_items,
+                processed_items: row.processed_items,
+                output_size: row.output_size,
+                download_url: row.download_url,
+                error_message: row.error_message,
+                created_at: row.created_at,
+                started_at: row.started_at,
+                completed_at: row.completed_at,
+                expires_at: row.expires_at,
+            })
+            .collect();
+
+        Ok(jobs)
+    }
+
+    /// Delete export job
+    pub async fn delete_export_job(&self, job_id: Uuid) -> Result<(), IndexError> {
+        sqlx::query!(
+            r#"
+            DELETE FROM export_jobs WHERE id = $1
+            "#,
+            job_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get entries by path (helper method for exports)
+    pub async fn get_entries_by_path(&self, ref_name: &str, path: &str) -> Result<Vec<Entry>, IndexError> {
+        // This is a simplified implementation
+        // In reality, you would need to get the commit ID from the ref first
+        let rows = sqlx::query!(
+            r#"
+            SELECT e.id, e.commit_id, e.path, e.object_sha256, e.meta, e.created_at
+            FROM entries e
+            JOIN commits c ON e.commit_id = c.id
+            JOIN references r ON c.id = r.commit_id
+            WHERE r.name = $1 AND e.path = $2
+            "#,
+            ref_name,
+            path
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let entries = rows
+            .into_iter()
+            .map(|row| Entry {
+                id: row.id,
+                commit_id: row.commit_id,
+                path: row.path,
+                object_sha256: row.object_sha256,
+                meta: row.meta,
+                created_at: row.created_at,
+            })
+            .collect();
+
+        Ok(entries)
     }
 }

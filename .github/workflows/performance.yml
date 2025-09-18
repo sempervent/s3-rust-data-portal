@@ -1,0 +1,233 @@
+# GitHub Actions: Performance Testing with K6
+# Week 5: Automated performance testing
+
+name: Performance Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of performance test'
+        required: true
+        default: 'load'
+        type: choice
+        options:
+          - load
+          - stress
+          - spike
+          - all
+
+env:
+  COMPOSE_PROJECT_NAME: blacklake-performance
+
+jobs:
+  # ===== SETUP ENVIRONMENT =====
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create environment file
+        run: |
+          cp env.example .env
+          echo "POSTGRES_PASSWORD=perftest123" >> .env
+          echo "MINIO_ROOT_PASSWORD=perftest123" >> .env
+          echo "KEYCLOAK_ADMIN_PASSWORD=perftest123" >> .env
+          echo "RUST_LOG=info" >> .env
+
+      - name: Start services
+        run: |
+          docker compose --profile dev up -d --wait
+          sleep 60
+
+      - name: Wait for services to be healthy
+        run: |
+          timeout 120 bash -c 'until curl -f http://localhost:8080/live; do sleep 5; done'
+          timeout 120 bash -c 'until curl -f http://localhost:8080/ready; do sleep 5; done'
+
+      - name: Run database migrations
+        run: |
+          docker compose run --rm api sqlx migrate run
+
+  # ===== LOAD TEST =====
+  load-test:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.inputs.test_type == 'load' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run load test
+        run: |
+          k6 run ops/k6/load-test.js --out json=load-test-results.json
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-test-results.json
+
+      - name: Generate load test report
+        run: |
+          k6 run ops/k6/load-test.js --out json=load-test-results.json
+          # Generate HTML report
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('load-test-results.json', 'utf8'));
+            const html = \`
+              <!DOCTYPE html>
+              <html>
+                <head><title>Load Test Results</title></head>
+                <body>
+                  <h1>Load Test Results</h1>
+                  <pre>\${JSON.stringify(data, null, 2)}</pre>
+                </body>
+              </html>
+            \`;
+            fs.writeFileSync('load-test-report.html', html);
+          "
+
+      - name: Upload load test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: load-test-report.html
+
+  # ===== STRESS TEST =====
+  stress-test:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.inputs.test_type == 'stress' || github.event.inputs.test_type == 'all'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run stress test
+        run: |
+          k6 run ops/k6/stress-test.js --out json=stress-test-results.json
+
+      - name: Upload stress test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results
+          path: stress-test-results.json
+
+      - name: Generate stress test report
+        run: |
+          k6 run ops/k6/stress-test.js --out json=stress-test-results.json
+          # Generate HTML report
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('stress-test-results.json', 'utf8'));
+            const html = \`
+              <!DOCTYPE html>
+              <html>
+                <head><title>Stress Test Results</title></head>
+                <body>
+                  <h1>Stress Test Results</h1>
+                  <pre>\${JSON.stringify(data, null, 2)}</pre>
+                </body>
+              </html>
+            \`;
+            fs.writeFileSync('stress-test-report.html', html);
+          "
+
+      - name: Upload stress test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-report
+          path: stress-test-report.html
+
+  # ===== SPIKE TEST =====
+  spike-test:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.inputs.test_type == 'spike' || github.event.inputs.test_type == 'all'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run spike test
+        run: |
+          k6 run ops/k6/load-test.js --stage 1m:10,1m:100,1m:10,1m:200,1m:10,1m:0 --out json=spike-test-results.json
+
+      - name: Upload spike test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: spike-test-results
+          path: spike-test-results.json
+
+  # ===== CLEANUP =====
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [load-test, stress-test, spike-test]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cleanup services
+        run: |
+          docker compose down -v
+          docker system prune -f
+
+  # ===== NOTIFICATION =====
+  notify:
+    runs-on: ubuntu-latest
+    needs: [load-test, stress-test, spike-test, cleanup]
+    if: always()
+    
+    steps:
+      - name: Notify on success
+        if: needs.load-test.result == 'success' && needs.stress-test.result == 'success'
+        run: |
+          echo "✅ Performance tests completed successfully!"
+          echo "Load test: ${{ needs.load-test.result }}"
+          echo "Stress test: ${{ needs.stress-test.result }}"
+          echo "Spike test: ${{ needs.spike-test.result }}"
+
+      - name: Notify on failure
+        if: needs.load-test.result == 'failure' || needs.stress-test.result == 'failure'
+        run: |
+          echo "❌ Performance tests failed!"
+          echo "Load test: ${{ needs.load-test.result }}"
+          echo "Stress test: ${{ needs.stress-test.result }}"
+          echo "Spike test: ${{ needs.spike-test.result }}"
+          exit 1
