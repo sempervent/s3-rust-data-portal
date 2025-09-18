@@ -1,0 +1,15 @@
+{
+  "creation_dt": "2025-01-17T18:28:00Z",
+  "creator": "you@example.org",
+  "file_name": "demo.csv",
+  "file_type": "text/csv",
+  "file_size": 1234,
+  "org_lab": "ORNL",
+  "description": "Demo dataset for testing Dublin Core metadata",
+  "data_source": "sensor",
+  "data_collection_method": "manual",
+  "version": "1.0",
+  "notes": "This is a test dataset for demonstrating Blacklake's Dublin Core RDF capabilities",
+  "tags": ["demo", "csv", "dublin-core", "test"],
+  "license": "CC-BY-4.0"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Example Model",
+  "description": "An example machine learning model",
+  "version": "1.0.0",
+  "tags": ["machine-learning", "example", "demo"]
+}

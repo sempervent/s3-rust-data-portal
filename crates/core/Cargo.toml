@@ -1,0 +1,21 @@
+[package]
+name = "blacklake-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+schemars = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+sophia = { workspace = true }
+regex = { workspace = true }
+url = { workspace = true }
+urlencoding = "2.1"
+
+[dev-dependencies]
+tempfile = "3.0"
