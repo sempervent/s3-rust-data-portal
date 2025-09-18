@@ -1,136 +1,148 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Folder, Calendar, User } from 'lucide-react';
-import { useRepositories, useCreateRepository } from '../hooks/useApi';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useApi } from '@/hooks/useApi'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useAppStore } from '@/stores/app'
 
-export default function Repositories() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newRepoName, setNewRepoName] = useState('');
-  
-  const { data: repositories, isLoading, error } = useRepositories();
-  const createRepoMutation = useCreateRepository();
+interface Repository {
+  id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+}
 
-  const handleCreateRepo = async () => {
-    if (!newRepoName.trim()) return;
-    
-    try {
-      await createRepoMutation.mutateAsync({ name: newRepoName.trim() });
-      setNewRepoName('');
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to create repository:', error);
+const Repositories: React.FC = () => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [newRepoName, setNewRepoName] = useState('')
+  const [newRepoDescription, setNewRepoDescription] = useState('')
+  const { addToast } = useAppStore()
+
+  const { data: repos, isLoading, refetch } = useApi<Repository[]>('/v1/repos')
+  const { mutate: createRepo } = useApi('/v1/repos', {
+    method: 'POST',
+    onSuccess: () => {
+      addToast('Repository created successfully', 'success')
+      setIsCreateDialogOpen(false)
+      setNewRepoName('')
+      setNewRepoDescription('')
+      refetch()
+    },
+    onError: (error) => {
+      addToast(`Failed to create repository: ${error.message}`, 'error')
     }
-  };
+  })
+
+  const handleCreateRepo = () => {
+    if (!newRepoName.trim()) {
+      addToast('Repository name is required', 'error')
+      return
+    }
+
+    createRepo({
+      name: newRepoName,
+      description: newRepoDescription || undefined
+    })
+  }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading repositories...</div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading repositories...</p>
         </div>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center text-red-600">
-          Failed to load repositories: {error.message}
-        </div>
-      </div>
-    );
+    )
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Repositories</h1>
+        
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Repository
-            </Button>
+            <Button>Create Repository</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Repository</DialogTitle>
-              <DialogDescription>
-                Enter a name for your new repository. Repository names must be unique and can only contain alphanumeric characters, hyphens, underscores, and dots.
-              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="repo-name">Repository Name</Label>
-                <Input
-                  id="repo-name"
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Repository Name
+                </label>
+                <input
+                  type="text"
                   value={newRepoName}
                   onChange={(e) => setNewRepoName(e.target.value)}
-                  placeholder="my-repository"
+                  className="w-full px-3 py-2 border border-input rounded-md"
+                  placeholder="my-data-repo"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newRepoDescription}
+                  onChange={(e) => setNewRepoDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md"
+                  rows={3}
+                  placeholder="Description of your repository"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateRepo}>
+                  Create Repository
+                </Button>
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleCreateRepo}
-                disabled={!newRepoName.trim() || createRepoMutation.isPending}
-              >
-                {createRepoMutation.isPending ? 'Creating...' : 'Create'}
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {repositories && repositories.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {repositories.map((repo) => (
-            <Link key={repo.id} to={`/repos/${repo.name}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Folder className="w-5 h-5 mr-2" />
-                    {repo.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      {repo.created_by}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {new Date(repo.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+      {repos && repos.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {repos.map((repo) => (
+            <Link
+              key={repo.id}
+              to={`/repos/${repo.name}`}
+              className="block p-6 border border-border rounded-lg hover:bg-accent transition-colors"
+            >
+              <h3 className="text-lg font-semibold mb-2">{repo.name}</h3>
+              {repo.description && (
+                <p className="text-muted-foreground text-sm mb-4">
+                  {repo.description}
+                </p>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Created {new Date(repo.created_at).toLocaleDateString()}
+              </div>
             </Link>
           ))}
         </div>
       ) : (
         <div className="text-center py-12">
-          <Folder className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No repositories yet</h3>
           <p className="text-muted-foreground mb-4">
-            Create your first repository to start managing data artifacts.
+            No repositories found. Create your first repository to get started.
           </p>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
             Create Repository
           </Button>
         </div>
       )}
     </div>
-  );
+  )
 }
+
+export default Repositories
