@@ -17,6 +17,10 @@ pub use uuid::Uuid as CommitId;
 // Re-export validation functions
 pub use validation::*;
 
+// Re-export merge and schema functions
+pub use merge::*;
+pub use schema::*;
+
 /// Repository information
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Repository {
@@ -147,6 +151,7 @@ pub enum ChangeOp {
     Add,
     Modify,
     Delete,
+    Meta,
 }
 
 /// Response for commit creation
@@ -606,3 +611,8 @@ mod metadata_tests {
         assert_eq!(index.tags, Some(vec!["demo".to_string(), "csv".to_string()]));
     }
 }
+
+// Module declarations
+pub mod validation;
+pub mod merge;
+pub mod schema;

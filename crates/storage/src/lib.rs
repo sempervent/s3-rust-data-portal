@@ -8,6 +8,8 @@ use aws_smithy_http::endpoint::Endpoint as SmithyEndpoint;
 use std::time::Duration;
 use thiserror::Error;
 use url::Url;
+use tokio::time::{sleep, Instant};
+use rand::Rng;
 
 #[derive(Error, Debug)]
 pub enum StorageError {
@@ -95,6 +97,41 @@ impl StorageClient {
             .await?;
 
         Ok(Url::parse(&request.uri().to_string())?)
+    }
+
+    /// Retry operation with exponential backoff and jitter
+    async fn retry_operation<F, Fut, T>(&self, operation: F) -> Result<T>
+    where
+        F: Fn() -> Fut,
+        Fut: std::future::Future<Output = Result<T>>,
+    {
+        const MAX_RETRIES: u32 = 3;
+        const BASE_DELAY: Duration = Duration::from_millis(100);
+        const MAX_DELAY: Duration = Duration::from_secs(5);
+
+        let mut attempt = 0;
+        loop {
+            match operation().await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    attempt += 1;
+                    if attempt > MAX_RETRIES {
+                        return Err(e);
+                    }
+
+                    // Exponential backoff with jitter
+                    let delay = BASE_DELAY * 2_u32.pow(attempt - 1);
+                    let jitter = rand::thread_rng().gen_range(0..=100);
+                    let final_delay = std::cmp::min(
+                        delay + Duration::from_millis(jitter),
+                        MAX_DELAY,
+                    );
+
+                    tracing::warn!("S3 operation failed (attempt {}), retrying in {:?}: {}", attempt, final_delay, e);
+                    sleep(final_delay).await;
+                }
+            }
+        }
     }
 
     /// Generate a presigned GET URL for downloading content

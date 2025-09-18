@@ -11,6 +11,7 @@ use blacklake_core::{
     RdfFormat, SearchRequest, SearchResponse, TreeResponse, TreeEntry, UploadInitRequest, 
     UploadInitResponse, canonical_to_dc_jsonld, canonical_to_turtle, validate_repo_name,
     normalize_path, validate_meta, validate_content_type, validate_file_size,
+    SchemaRegistry, create_dublin_core_schema, deep_merge, get_metadata_changes,
 };
 use blacklake_index::{IndexClient, IndexError};
 use blacklake_storage::{StorageClient, StorageError};
@@ -43,6 +44,7 @@ struct AppState {
     auth_layer: AuthLayer,
     rate_limit_state: RateLimitState,
     health_state: HealthState,
+    schema_registry: SchemaRegistry,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -116,12 +118,18 @@ async fn main() -> anyhow::Result<()> {
         metrics: Arc::new(metrics_registry),
     };
 
+    // Initialize schema registry
+    let mut schema_registry = SchemaRegistry::default();
+    let default_schema = create_dublin_core_schema();
+    schema_registry.register_schema(default_schema);
+
     let state = AppState { 
         index, 
         storage, 
         auth_layer,
         rate_limit_state,
         health_state,
+        schema_registry,
     };
 
     // Build the application
@@ -138,6 +146,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/v1/repos/:repo/tree/:ref", get(get_tree))
         .route("/v1/repos/:repo/search", get(search))
         .route("/v1/repos/:repo/rdf/:ref/*path", get(get_rdf))
+        .route("/v1/schemas/:collection", get(get_schema))
+        .route("/v1/schemas/default", get(get_default_schema))
         .layer(
             ServiceBuilder::new()
                 .layer(middleware::from_fn_with_state(
@@ -370,6 +380,12 @@ async fn commit(
             .map_err(|e| ApiError::InvalidRequest(format!("Invalid metadata for path '{}': {}", change.path, e)))?;
     }
 
+    // Check for merge flag
+    let merge_metadata = headers.get("X-Blacklake-Merge")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s == "true")
+        .unwrap_or(false);
+
     // Get current commit for the reference
     let current_commit = state.index.get_ref(repo_info.id, &payload.r#ref).await.ok();
 
@@ -385,15 +401,38 @@ async fn commit(
         )
         .await?;
 
+    // Prepare changes with merged metadata
+    let mut final_changes = Vec::new();
+    for change in &payload.changes {
+        let mut final_change = change.clone();
+        
+        // Handle metadata merging for existing entries
+        if merge_metadata && (change.op == ChangeOp::Modify || change.op == ChangeOp::Meta) {
+            if let Some(current_commit) = &current_commit {
+                // Get current metadata for the path
+                if let Ok(current_entries) = state.index.get_entries(current_commit.commit_id, Some(&change.path)).await {
+                    if let Some(current_entry) = current_entries.entries.first() {
+                        if let Some(current_meta) = &current_entry.meta {
+                            // Perform deep merge
+                            final_change.meta = deep_merge(current_meta, &change.meta)?;
+                        }
+                    }
+                }
+            }
+        }
+        
+        final_changes.push(final_change);
+    }
+
     // Bind entries to commit
     state
         .index
-        .bind_entries(commit.id, &payload.changes)
+        .bind_entries(commit.id, &final_changes)
         .await?;
 
     // Process metadata indexing and RDF generation for each change
-    for change in &payload.changes {
-        if change.op == ChangeOp::Add || change.op == ChangeOp::Modify {
+    for change in &final_changes {
+        if change.op == ChangeOp::Add || change.op == ChangeOp::Modify || change.op == ChangeOp::Meta {
             // Update metadata index
             let index_row = project_to_index(commit.id, &change.path, &change.meta);
             state
@@ -719,4 +758,31 @@ fn validate_metadata(meta: &Value, schema: &MetadataSchema) -> bool {
     // TODO: Implement proper JSON Schema validation
     // For now, just check if it's an object
     meta.is_object()
+}
+
+// Schema handlers
+
+async fn get_schema(
+    State(state): State<AppState>,
+    Path(collection): Path<String>,
+    headers: HeaderMap,
+) -> ApiResult<Json<MetadataSchema>> {
+    let _auth = extract_auth(&headers).await?;
+
+    let schema = state.schema_registry.get_schema(&collection)
+        .ok_or_else(|| ApiError::Repo(format!("Schema not found: {}", collection)))?;
+
+    Ok(Json(schema.clone()))
+}
+
+async fn get_default_schema(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> ApiResult<Json<MetadataSchema>> {
+    let _auth = extract_auth(&headers).await?;
+
+    let schema = state.schema_registry.get_default_schema()
+        .ok_or_else(|| ApiError::Repo("Default schema not found".to_string()))?;
+
+    Ok(Json(schema.clone()))
 }

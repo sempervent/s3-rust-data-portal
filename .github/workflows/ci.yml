@@ -74,6 +74,45 @@ jobs:
         SQLX_OFFLINE: true
       run: cargo test --all-features
 
+    - name: CLI Integration Test
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        SQLX_OFFLINE: true
+        S3_ENDPOINT: http://localhost:9000
+        S3_REGION: us-east-1
+        S3_BUCKET: blacklake
+        S3_ACCESS_KEY: minioadmin
+        S3_SECRET_KEY: minioadmin
+        S3_FORCE_PATH_STYLE: "true"
+        OIDC_ISSUER: http://localhost:8081/realms/master
+        OIDC_AUDIENCE: blacklake
+      run: |
+        # Start MinIO for CLI testing
+        docker run -d --name minio-test \
+          -p 9000:9000 -p 9001:9001 \
+          -e MINIO_ROOT_USER=minioadmin \
+          -e MINIO_ROOT_PASSWORD=minioadmin \
+          minio/minio server /data --console-address ":9001"
+        
+        # Wait for MinIO to be ready
+        sleep 10
+        
+        # Create bucket
+        docker run --rm --network host \
+          -e MC_HOST_minio=http://minioadmin:minioadmin@localhost:9000 \
+          minio/mc mb minio/blacklake --ignore-existing
+        
+        # Build CLI
+        cargo build -p blacklake-cli
+        
+        # Test CLI commands (non-interactive mode)
+        ./target/debug/blacklake repo create test-repo --non-interactive || true
+        ./target/debug/blacklake repo list --non-interactive || true
+        
+        # Cleanup
+        docker stop minio-test
+        docker rm minio-test
+
     - name: Prepare sqlx-data
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres

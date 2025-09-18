@@ -33,10 +33,22 @@ pub struct RateLimitConfig {
 impl Default for RateLimitConfig {
     fn default() -> Self {
         Self {
-            requests_per_minute: 100,
-            burst_size: 20,
-            per_user_limit: 1000,
-            per_ip_limit: 500,
+            requests_per_minute: std::env::var("RATE_LIMIT_REQUESTS_PER_MINUTE")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(100),
+            burst_size: std::env::var("RATE_LIMIT_BURST_SIZE")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(20),
+            per_user_limit: std::env::var("RATE_LIMIT_PER_USER")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(1000),
+            per_ip_limit: std::env::var("RATE_LIMIT_PER_IP")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(500),
         }
     }
 }

@@ -18,6 +18,17 @@ thiserror = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 
+# CLI UX dependencies
+dialoguer = "0.11"
+indicatif = "0.17"
+mime_guess = "2.0"
+similar = "2.4"
+colored = "2.1"
+serde_yaml = "0.9"
+dirs = "5.0"
+clap_complete = "4.4"
+env_logger = "0.10"
+
 # Internal crates
 blacklake-core = { path = "../core" }
 blacklake-storage = { path = "../storage" }

@@ -74,17 +74,31 @@ cargo run -p api
 
 The API server will be available at `http://localhost:8080`.
 
-### 5. Test with CLI
+### 5. CLI-First Workflow
 
 ```bash
 # Build CLI
 cargo build -p blacklake-cli
 
 # Create a repository
-./target/debug/blacklake repo create my-models
+./target/debug/blacklake repo create my-data-repo
 
-# List repositories
-./target/debug/blacklake repo list
+# Upload a file with interactive metadata
+./target/debug/blacklake put my-data-repo main ./data/sample.csv --path datasets/sample.csv
+# Follow the interactive prompts for metadata
+
+# Edit metadata for an existing file
+./target/debug/blacklake meta edit my-data-repo main datasets/sample.csv
+# Opens editor or prompts for metadata updates
+
+# Search your repository
+./target/debug/blacklake search my-data-repo --org "MyLab" --file-type "text/csv" --sort size
+
+# Download a file
+./target/debug/blacklake get my-data-repo main datasets/sample.csv --out downloaded.csv
+
+# View RDF metadata
+./target/debug/blacklake rdf get my-data-repo main datasets/sample.csv --format turtle
 ```
 
 ## API Examples
