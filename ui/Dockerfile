@@ -2,7 +2,7 @@
 # Week 5: Multi-arch builds with optimization
 
 # ===== BUILDER STAGE =====
-FROM node:20-alpine as builder
+FROM node:20-alpine AS builder
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -25,7 +25,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
 # ===== PRODUCTION STAGE =====
-FROM nginx:1.25-alpine as production
+FROM nginx:1.25-alpine AS production
 
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -57,7 +57,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # ===== DEVELOPMENT STAGE =====
-FROM node:20-alpine as development
+FROM node:20-alpine AS development
 
 # Install pnpm
 RUN npm install -g pnpm

@@ -2,14 +2,14 @@
 # Week 5: Background job processor for BlackLake
 
 # ===== PLANNER STAGE =====
-FROM rust:1.75-slim as planner
+FROM rust:1.82-slim AS planner
 WORKDIR /app
 RUN cargo install cargo-chef
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 # ===== BUILDER STAGE =====
-FROM rust:1.75-slim as builder
+FROM rust:1.82-slim AS builder
 WORKDIR /app
 
 # Install system dependencies
@@ -28,7 +28,7 @@ COPY . .
 RUN cargo build --release --bin jobrunner
 
 # ===== RUNTIME STAGE =====
-FROM debian:bookworm-slim as runtime
+FROM debian:bookworm-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \

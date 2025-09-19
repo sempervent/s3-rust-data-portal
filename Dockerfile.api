@@ -9,14 +9,14 @@ ARG GIT_SHA=""
 ARG BUILD_DATE=""
 
 # ===== PLANNER STAGE =====
-FROM rust:1.75-slim as planner
+FROM rust:1.82-slim AS planner
 WORKDIR /app
 RUN cargo install cargo-chef
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 # ===== BUILDER STAGE =====
-FROM rust:1.75-slim as builder
+FROM rust:1.82-slim AS builder
 WORKDIR /app
 
 # Install system dependencies
@@ -41,7 +41,7 @@ RUN cargo sqlx prepare --workspace
 RUN cargo build --release --bin api --bin jobrunner
 
 # ===== RUNTIME STAGE =====
-FROM debian:bookworm-slim as runtime
+FROM debian:bookworm-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -80,7 +80,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["./api"]
 
 # ===== DEVELOPMENT STAGE =====
-FROM rust:1.75-slim as development
+FROM rust:1.82-slim AS development
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -117,8 +117,5 @@ CMD ["cargo", "watch", "-x", "run"]
 LABEL org.opencontainers.image.title="BlackLake API"
 LABEL org.opencontainers.image.description="BlackLake Data Artifact Management API"
 LABEL org.opencontainers.image.vendor="BlackLake"
-LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
-LABEL org.opencontainers.image.revision="${GIT_SHA}"
 LABEL org.opencontainers.image.source="https://github.com/blacklake/blacklake"
 LABEL org.opencontainers.image.licenses="MIT"
