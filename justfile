@@ -1,11 +1,14 @@
 # BlackLake Developer Commands
-# Week 5: Developer ergonomics and operations
 
 # ===== BUILD COMMANDS =====
 
 # Build all Rust crates
 build:
     cargo build
+
+# build all bake images in parallel
+bake:
+    docker buildx bake -f docker-bake-simple.hcl local 
 
 # Build in release mode
 build-release:
@@ -36,10 +39,6 @@ fmt-check:
     cargo fmt -- --check
 
 # ===== DOCKER COMMANDS =====
-
-# Build multi-arch images locally
-bake:
-    docker buildx bake --set *.output=type=docker local
 
 # Build and push multi-arch images
 bake-push:
@@ -193,6 +192,43 @@ cleanup:
     docker system prune -f
     docker volume prune -f
     docker network prune -f
+
+# ===== FAST SETUP COMMANDS =====
+
+# Complete setup: build all images and start development stack
+setup-all:
+    @echo "🚀 Building all images and starting development stack..."
+    docker buildx bake -f docker-bake-simple.hcl local
+    docker compose --profile dev up -d --wait
+    @echo "✅ Setup complete! API available at http://localhost:8080"
+    @echo "📊 Grafana available at http://localhost:3000 (admin/admin)"
+    @echo "🔍 Solr available at http://localhost:8983"
+
+# Quick development setup (core services only)
+setup-dev:
+    @echo "⚡ Quick development setup..."
+    docker buildx bake -f docker-bake-simple.hcl dev
+    docker compose --profile dev up -d --wait
+    @echo "✅ Development setup complete!"
+
+# Production setup
+setup-prod:
+    @echo "🏭 Building production images..."
+    docker buildx bake -f docker-bake-simple.hcl core
+    docker compose --profile prod up -d --wait
+    @echo "✅ Production setup complete!"
+
+# Build all images with maximum parallelism
+build-all:
+    @echo "🔨 Building all images in parallel..."
+    docker buildx bake -f docker-bake-simple.hcl --parallel all
+    @echo "✅ All images built successfully!"
+
+# Build core services only
+build-core:
+    @echo "🔨 Building core services..."
+    docker buildx bake -f docker-bake-simple.hcl core
+    @echo "✅ Core services built successfully!"
 
 # ===== CI/CD COMMANDS =====
 

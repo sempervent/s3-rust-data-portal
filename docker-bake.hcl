@@ -24,18 +24,18 @@ variable "BUILD_DATE" {
 
 # ===== COMMON ARGUMENTS =====
 function "common_args" {
-  returns = {
-    "build-arg:REGISTRY" = REGISTRY
-    "build-arg:IMAGE_PREFIX" = IMAGE_PREFIX
-    "build-arg:VERSION" = VERSION
-    "build-arg:GIT_SHA" = GIT_SHA
-    "build-arg:BUILD_DATE" = BUILD_DATE
+  return {
+    REGISTRY = REGISTRY
+    IMAGE_PREFIX = IMAGE_PREFIX
+    VERSION = VERSION
+    GIT_SHA = GIT_SHA
+    BUILD_DATE = BUILD_DATE
   }
 }
 
 # ===== COMMON LABELS =====
 function "common_labels" {
-  returns = {
+  return {
     "org.opencontainers.image.title" = "BlackLake ${IMAGE_PREFIX}"
     "org.opencontainers.image.description" = "BlackLake Data Artifact Management Platform"
     "org.opencontainers.image.vendor" = "BlackLake"
@@ -54,7 +54,7 @@ variable "PLATFORMS" {
 
 # ===== CACHE CONFIGURATION =====
 function "cache_config" {
-  returns = {
+  return {
     "cache-from" = [
       "type=gha,scope=${IMAGE_PREFIX}-${REGISTRY}",
       "type=local,src=/tmp/.buildx-cache"
@@ -73,8 +73,8 @@ target "api" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/api:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/api:latest",
@@ -90,8 +90,8 @@ target "ui" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/ui:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/ui:latest",
@@ -107,8 +107,8 @@ target "gateway" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/gateway:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/gateway:latest",
@@ -124,8 +124,8 @@ target "jobrunner" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/jobrunner:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/jobrunner:latest",
@@ -141,8 +141,8 @@ target "otel-collector" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/otel-collector:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/otel-collector:latest",
@@ -158,8 +158,8 @@ target "mlflow" {
   platforms = PLATFORMS
   args = common_args()
   labels = common_labels()
-  cache-from = cache_config()["cache-from"]
-  cache-to = cache_config()["cache-to"]
+  cache-from = cache_config().cache-from
+  cache-to = cache_config().cache-to
   tags = [
     "${REGISTRY}/${IMAGE_PREFIX}/mlflow:${VERSION}",
     "${REGISTRY}/${IMAGE_PREFIX}/mlflow:latest",
@@ -227,7 +227,7 @@ group "local" {
 
 # ===== SECURITY & PROVENANCE =====
 function "security_config" {
-  returns = {
+  return {
     "attest" = [
       "type=sbom,generator=image",
       "type=provenance,mode=max"
@@ -240,16 +240,16 @@ function "security_config" {
 # ===== SECURE BUILD TARGETS =====
 target "api-secure" {
   inherits = ["api"]
-  attest = security_config()["attest"]
-  sbom = security_config()["sbom"]
-  provenance = security_config()["provenance"]
+  attest = security_config().attest
+  sbom = security_config().sbom
+  provenance = security_config().provenance
 }
 
 target "ui-secure" {
   inherits = ["ui"]
-  attest = security_config()["attest"]
-  sbom = security_config()["sbom"]
-  provenance = security_config()["provenance"]
+  attest = security_config().attest
+  sbom = security_config().sbom
+  provenance = security_config().provenance
 }
 
 group "secure" {

@@ -52,6 +52,122 @@ docker compose up -d --wait
 just up
 ```
 
+## 🚀 Fast Setup Guide
+
+### ⚡ **One-Command Setup**
+```bash
+# Complete setup: build all images and start development stack
+./quick-setup.sh
+
+# Or using just (if available)
+just setup-all
+```
+
+### 🔧 **Alternative Setup Methods**
+
+#### **Using Optimized Build Script**
+```bash
+# Development stack (recommended)
+./build-optimized.sh dev
+
+# Core services only (fastest)
+./build-optimized.sh core
+
+# All services with monitoring
+./build-optimized.sh all
+
+# Fast build (single platform)
+./build-optimized.sh fast
+```
+
+#### **Using Docker Buildx Bake (DRY Approach)**
+```bash
+# Build all images locally with caching
+docker buildx bake --set *.output=type=docker local
+
+# Build specific groups
+docker buildx bake --set *.output=type=docker core    # API, UI, Gateway
+docker buildx bake --set *.output=type=docker dev     # API, UI only
+docker buildx bake --set *.output=type=docker all     # Everything
+
+# Build with parallel execution
+docker buildx bake --set *.output=type=docker --parallel all
+```
+
+#### **Using Just Commands**
+```bash
+# Complete setup
+just setup-all
+
+# Quick development
+just setup-dev
+
+# Production setup
+just setup-prod
+
+# Build all images
+just build-all
+
+# Build core services
+just build-core
+```
+
+### 📋 **Build Groups (Smart & DRY)**
+
+The `docker-bake.hcl` defines optimized build groups:
+
+| Group | Targets | Use Case | Build Time |
+|-------|---------|----------|------------|
+| `local` | api-local, ui-local, gateway-local | Development | ~2-3 min |
+| `dev` | api, ui | Development essentials | ~1-2 min |
+| `core` | api, ui, gateway | Core services | ~3-4 min |
+| `prod` | api, ui, gateway | Production stack | ~3-4 min |
+| `all` | All services | Complete build | ~5-8 min |
+
+### 🎯 **Recommended Workflow**
+
+#### **First Time Setup**
+```bash
+# Option 1: One command (easiest)
+./quick-setup.sh
+
+# Option 2: Optimized build (fastest)
+./build-optimized.sh dev
+
+# Option 3: Manual (most control)
+docker buildx bake --set *.output=type=docker local
+docker compose --profile dev up -d --wait
+```
+
+#### **Daily Development**
+```bash
+# Quick start
+just setup-dev
+
+# With specific features
+docker compose --profile dev --profile search-os up -d
+```
+
+#### **Production Deployment**
+```bash
+# Build production images
+./build-optimized.sh prod
+
+# Or using just
+just setup-prod
+```
+
+### 🌐 **Access Points After Setup**
+- **API**: http://localhost:8080
+- **UI**: http://localhost:8080 (served by gateway)
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Solr**: http://localhost:8983
+- **MinIO**: http://localhost:9001 (minioadmin/minioadmin)
+- **Keycloak**: http://localhost:8081 (admin/admin)
+
+### 📚 **For More Details**
+See [FAST_SETUP.md](FAST_SETUP.md) for comprehensive build strategies and optimization tips.
+
 ## Week 5: Production Operations
 
 BlackLake now includes comprehensive production-ready features:
