@@ -80,17 +80,11 @@ services:
   redis:
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --loglevel debug
 
-  # OpenSearch with development settings
-  opensearch:
+  # Solr with development settings
+  solr:
     environment:
-      - cluster.name=blacklake-dev-cluster
-      - node.name=blacklake-dev-node
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
-      - "DISABLE_INSTALL_DEMO_CONFIG=true"
-      - "DISABLE_SECURITY_PLUGIN=true"
-      - "logger.level=DEBUG"
+      - SOLR_HEAP=256m
+      - SOLR_OPTS=-Dsolr.log.level=DEBUG
 
   # MLflow with development settings
   mlflow:
