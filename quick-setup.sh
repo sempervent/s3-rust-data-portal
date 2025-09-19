@@ -22,7 +22,7 @@ else
     
     # Build all images locally
     echo "Building all images..."
-    docker buildx bake -f docker-bake-simple.hcl local
+    docker buildx bake local
     
     # Start development stack
     echo "Starting development stack..."

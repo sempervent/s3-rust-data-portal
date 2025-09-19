@@ -8,7 +8,7 @@ build:
 
 # build all bake images in parallel
 bake:
-    docker buildx bake -f docker-bake-simple.hcl local 
+    docker buildx bake local 
 
 # Build in release mode
 build-release:
@@ -198,7 +198,7 @@ cleanup:
 # Complete setup: build all images and start development stack
 setup-all:
     @echo "🚀 Building all images and starting development stack..."
-    docker buildx bake -f docker-bake-simple.hcl local
+    docker buildx bake local
     docker compose --profile dev up -d --wait
     @echo "✅ Setup complete! API available at http://localhost:8080"
     @echo "📊 Grafana available at http://localhost:3000 (admin/admin)"
@@ -207,27 +207,27 @@ setup-all:
 # Quick development setup (core services only)
 setup-dev:
     @echo "⚡ Quick development setup..."
-    docker buildx bake -f docker-bake-simple.hcl dev
+    docker buildx bake dev
     docker compose --profile dev up -d --wait
     @echo "✅ Development setup complete!"
 
 # Production setup
 setup-prod:
     @echo "🏭 Building production images..."
-    docker buildx bake -f docker-bake-simple.hcl core
+    docker buildx bake core
     docker compose --profile prod up -d --wait
     @echo "✅ Production setup complete!"
 
 # Build all images with maximum parallelism
 build-all:
     @echo "🔨 Building all images in parallel..."
-    docker buildx bake -f docker-bake-simple.hcl --parallel all
+    docker buildx bake --parallel all
     @echo "✅ All images built successfully!"
 
 # Build core services only
 build-core:
     @echo "🔨 Building core services..."
-    docker buildx bake -f docker-bake-simple.hcl core
+    docker buildx bake core
     @echo "✅ Core services built successfully!"
 
 # ===== CI/CD COMMANDS =====
