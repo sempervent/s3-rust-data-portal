@@ -75,19 +75,19 @@ The `docker-bake.hcl` defines smart build groups:
 
 ```bash
 # Core services only
-docker buildx bake -f docker-bake-simple.hcl core
+docker buildx bake core
 
 # Development essentials
-docker buildx bake -f docker-bake-simple.hcl dev
+docker buildx bake dev
 
 # Production stack
-docker buildx bake -f docker-bake-simple.hcl prod
+docker buildx bake prod
 
 # Everything
-docker buildx bake -f docker-bake-simple.hcl all
+docker buildx bake all
 
 # Local development (fastest)
-docker buildx bake -f docker-bake-simple.hcl local
+docker buildx bake local
 ```
 
 ## ⚡ **Optimized Build Order**
@@ -95,11 +95,11 @@ docker buildx bake -f docker-bake-simple.hcl local
 ### **Parallel Build Strategy**
 ```bash
 # Build core services in parallel
-docker buildx bake -f docker-bake-simple.hcl --parallel core &
+docker buildx bake --parallel core &
 
 # Build additional services
-docker buildx bake -f docker-bake-simple.hcl --parallel observability &
-docker buildx bake -f docker-bake-simple.hcl --parallel ml &
+docker buildx bake --parallel observability &
+docker buildx bake --parallel ml &
 
 # Wait for all builds
 wait
@@ -108,13 +108,13 @@ wait
 ### **Dependency-Aware Building**
 ```bash
 # 1. Build base images first (shared layers)
-docker buildx bake -f docker-bake-simple.hcl api ui
+docker buildx bake api ui
 
 # 2. Build dependent services
-docker buildx bake -f docker-bake-simple.hcl gateway jobrunner
+docker buildx bake gateway jobrunner
 
 # 3. Build optional services
-docker buildx bake -f docker-bake-simple.hcl otel-collector mlflow
+docker buildx bake otel-collector mlflow
 ```
 
 ## 🎯 **Smart Caching Strategy**
@@ -122,19 +122,19 @@ docker buildx bake -f docker-bake-simple.hcl otel-collector mlflow
 ### **Leverage BuildKit Cache**
 ```bash
 # Use GitHub Actions cache (if available)
-docker buildx bake -f docker-bake-simple.hcl --cache-from type=gha all
+docker buildx bake --cache-from type=gha all
 
 # Use local cache
-docker buildx bake -f docker-bake-simple.hcl --cache-from type=local all
+docker buildx bake --cache-from type=local all
 
 # Use registry cache
-docker buildx bake -f docker-bake-simple.hcl --cache-from type=registry,ref=ghcr.io/blacklake/api:cache all
+docker buildx bake --cache-from type=registry,ref=ghcr.io/blacklake/api:cache all
 ```
 
 ### **Layer Optimization**
 ```bash
 # Build with maximum cache utilization
-docker buildx bake -f docker-bake-simple.hcl --cache-to type=local,dest=/tmp/.buildx-cache all
+docker buildx bake --cache-to type=local,dest=/tmp/.buildx-cache all
 ```
 
 ## 🚀 **Production Build Pipeline**
@@ -142,10 +142,10 @@ docker buildx bake -f docker-bake-simple.hcl --cache-to type=local,dest=/tmp/.bu
 ### **Complete Production Build**
 ```bash
 # 1. Build all images with security attestations
-docker buildx bake -f docker-bake-simple.hcl secure
+docker buildx bake secure
 
 # 2. Build remaining services
-docker buildx bake -f docker-bake-simple.hcl otel-collector mlflow
+docker buildx bake otel-collector mlflow
 
 # 3. Push to registry
 docker buildx bake --push all
@@ -175,7 +175,7 @@ just up-profiles "dev" && just logs api
 ### **Staging (Production-like)**
 ```bash
 # Build production images locally
-docker buildx bake -f docker-bake-simple.hcl prod
+docker buildx bake prod
 
 # Start production stack
 just up-prod
@@ -184,10 +184,10 @@ just up-prod
 ### **Production (Multi-Arch + Security)**
 ```bash
 # Build with security attestations
-docker buildx bake -f docker-bake-simple.hcl secure
+docker buildx bake secure
 
 # Build remaining services
-docker buildx bake -f docker-bake-simple.hcl otel-collector mlflow
+docker buildx bake otel-collector mlflow
 
 # Push to registry
 docker buildx bake --push all
@@ -202,19 +202,19 @@ export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
 # Use BuildKit cache mounts
-docker buildx bake -f docker-bake-simple.hcl --cache-from type=gha all
+docker buildx bake --cache-from type=gha all
 ```
 
 ### **2. Parallel Builds**
 ```bash
 # Build multiple targets in parallel
-docker buildx bake -f docker-bake-simple.hcl --parallel all
+docker buildx bake --parallel all
 ```
 
 ### **3. Platform-Specific Builds**
 ```bash
 # Build for your platform only (faster)
-docker buildx bake -f docker-bake-simple.hcl --set *.platform=linux/amd64 all
+docker buildx bake --set *.platform=linux/amd64 all
 ```
 
 ### **4. Layer Caching**
@@ -237,7 +237,7 @@ just bake && just up-dev && just logs api
 ### **Production Ready**
 ```bash
 # Build and start production stack
-docker buildx bake -f docker-bake-simple.hcl prod && just up-prod
+docker buildx bake prod && just up-prod
 ```
 
 ### **Quick Development**
@@ -314,7 +314,7 @@ just up-profiles "dev,search-os" && just logs solr
 ### **Production Deployment**
 ```bash
 # Build production images
-docker buildx bake -f docker-bake-simple.hcl prod
+docker buildx bake prod
 
 # Deploy
 just up-prod

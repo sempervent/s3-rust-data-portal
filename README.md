@@ -26,6 +26,17 @@ Blacklake consists of six main crates:
 - **`modelx`**: ONNX/PyTorch metadata sniffers
 - **`cli`**: Developer command-line interface
 
+## 📚 Documentation
+
+**Comprehensive documentation is available in the [`docs/`](docs/) directory:**
+
+- **[Project Status](docs/PROJECT_STATUS.md)** - Current project status and completion summary
+- **[Fast Setup](docs/FAST_SETUP.md)** - Quick setup guide with build optimization
+- **[Verification](docs/VERIFICATION.md)** - Comprehensive verification of all systems
+- **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Week-by-week implementation details
+- **[Deployment](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[Operations](docs/OPERATIONS.md)** - Operations runbooks and procedures
+
 ## Quick Start
 
 ### Prerequisites
