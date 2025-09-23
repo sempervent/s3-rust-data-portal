@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
+use schemars::JsonSchema;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
 use sophia::turtle::serializer::TurtleSerializer;
@@ -12,6 +13,21 @@ use url::Url;
 
 // Re-export common types
 pub use uuid::Uuid as RepoId;
+
+// Custom JsonSchema implementation for UUID
+impl JsonSchema for Uuid {
+    fn schema_name() -> String {
+        "Uuid".to_string()
+    }
+    
+    fn json_schema(_gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        schemars::schema::Schema::Object(schemars::schema::SchemaObject {
+            instance_type: Some(schemars::schema::InstanceType::String.into()),
+            format: Some("uuid".to_string()),
+            ..Default::default()
+        })
+    }
+}
 pub use uuid::Uuid as CommitId;
 
 // Re-export validation functions
@@ -336,13 +352,15 @@ mod tests {
 // Dublin Core Metadata Support
 
 /// Dublin Core JSON-LD context
-pub const DC_CONTEXT: &serde_json::Value = &serde_json::json!({
-    "@context": {
-        "dc": "http://purl.org/dc/elements/1.1/",
-        "dcterms": "http://purl.org/dc/terms/",
-        "xsd": "http://www.w3.org/2001/XMLSchema#"
-    }
-});
+pub fn dc_context() -> serde_json::Value {
+    serde_json::json!({
+        "@context": {
+            "dc": "http://purl.org/dc/elements/1.1/",
+            "dcterms": "http://purl.org/dc/terms/",
+            "xsd": "http://www.w3.org/2001/XMLSchema#"
+        }
+    })
+}
 
 /// Canonical metadata structure following Dublin Core mapping
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -455,7 +473,7 @@ pub fn dc_jsonld_to_turtle(doc: &serde_json::Value) -> anyhow::Result<String> {
                     continue;
                 }
                 
-                let predicate = match key {
+                let predicate = match key.as_str() {
                     "dc:title" => "<http://purl.org/dc/elements/1.1/title>",
                     "dc:creator" => "<http://purl.org/dc/elements/1.1/creator>",
                     "dc:description" => "<http://purl.org/dc/elements/1.1/description>",

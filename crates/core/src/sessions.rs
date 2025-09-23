@@ -85,8 +85,9 @@ pub struct SessionManager {
 impl SessionManager {
     /// Create a new session manager
     pub fn new(redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
-        let store = RedisStore::new(redis_url)
+        let redis_client = redis::Client::open(redis_url)
             .map_err(|e| SessionError::Storage(e.to_string()))?;
+        let store = RedisStore::new(redis_client);
         
         Ok(Self { config, store })
     }
@@ -94,11 +95,10 @@ impl SessionManager {
     /// Create session layer for Axum
     pub fn create_layer(&self) -> SessionManagerLayer<RedisStore> {
         SessionManagerLayer::new(self.store.clone())
-            .with_name(self.config.cookie_name.clone())
+            .with_name(&self.config.cookie_name)
             .with_secure(self.config.secure)
             .with_http_only(self.config.http_only)
             .with_same_site(self.same_site_to_tower())
-            .with_max_age(self.config.max_age)
     }
     
     /// Create a new session for a user

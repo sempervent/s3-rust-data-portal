@@ -85,20 +85,20 @@ pub struct JobMetadata {
 #[async_trait::async_trait]
 pub trait BlackLakeJob: Job + Send + Sync + 'static {
     /// Job type identifier
-    fn job_type() -> &'static str;
+    fn job_type(&self) -> &'static str;
     
     /// Maximum number of retry attempts
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         3
     }
     
     /// Retry delay between attempts
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(60)
     }
     
     /// Job timeout
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(300) // 5 minutes default
     }
     
@@ -128,7 +128,7 @@ pub enum IndexOperation {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for IndexEntryJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "index_entry"
     }
     
@@ -202,7 +202,7 @@ pub struct SamplingJob {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for SamplingJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "sampling"
     }
     
@@ -263,7 +263,7 @@ pub struct RdfEmissionJob {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for RdfEmissionJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "rdf_emission"
     }
     
@@ -325,7 +325,7 @@ pub struct AntivirusScanJob {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for AntivirusScanJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "antivirus_scan"
     }
     
@@ -378,7 +378,7 @@ pub struct ExportJob {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for ExportJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "export"
     }
     
@@ -422,7 +422,7 @@ pub struct FullReindexJob {
 
 #[async_trait::async_trait]
 impl BlackLakeJob for FullReindexJob {
-    fn job_type() -> &'static str {
+    fn job_type(&self) -> &'static str {
         "full_reindex"
     }
     
@@ -541,8 +541,9 @@ pub struct JobManager {
 }
 
 impl JobManager {
-    pub fn new(redis_url: &str) -> Result<Self, JobError> {
+    pub async fn new(redis_url: &str) -> Result<Self, JobError> {
         let storage = RedisStorage::new(redis_url)
+            .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
         let configs = vec![
