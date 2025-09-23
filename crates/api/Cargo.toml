@@ -45,7 +45,7 @@ opentelemetry-jaeger = "0.20"
 prometheus = "0.13"
 
 # Rate limiting
-tower-governor = "0.1"
+tower_governor = "0.1"
 
 # Lazy static for metrics
 lazy_static = "1.4"
