@@ -151,7 +151,7 @@ impl BlackLakeJob for IndexEntryJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing index entry job: repo={}, path={}, operation={:?}",
             self.repo_name,
@@ -232,7 +232,7 @@ impl BlackLakeJob for SamplingJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing sampling job: repo={}, path={}, type={}",
             self.repo_name,
@@ -300,7 +300,7 @@ impl BlackLakeJob for RdfEmissionJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing RDF emission job: repo={}, path={}, formats={:?}",
             self.repo_name,
@@ -369,7 +369,7 @@ impl BlackLakeJob for AntivirusScanJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing antivirus scan job: repo={}, path={}, size={}",
             self.repo_name,
@@ -429,7 +429,7 @@ impl BlackLakeJob for ExportJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing export job: export_id={}, repo={}",
             self.export_id,
@@ -480,7 +480,7 @@ impl BlackLakeJob for FullReindexJob {
     }
     
     #[async_trait::async_trait]
-    async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
+    async fn process(&self, _ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing full reindex job: repo_id={:?}, since_commit={:?}, batch_size={}",
             self.repo_id,
@@ -578,7 +578,7 @@ impl JobQueueConfig {
 
 /// Job manager for handling all BlackLake jobs
 pub struct JobManager {
-    storage: RedisStorage<String, String>,
+    storage: RedisStorage<String>,
     configs: Vec<JobQueueConfig>,
 }
 

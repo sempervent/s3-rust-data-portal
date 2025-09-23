@@ -7,7 +7,7 @@ use uuid::Uuid;
 use schemars::JsonSchema;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
-use sophia::turtle::TurtleSerializer;
+use sophia::turtle::serializer::TurtleSerializer;
 use sophia::api::term::Term;
 use url::Url;
 
@@ -526,7 +526,7 @@ pub fn canonical_to_turtle(subject_iri: &str, meta: &CanonicalMeta) -> anyhow::R
 /// Project JSONB metadata to entry_meta_index row
 pub fn project_to_index(commit_id: Uuid, path: &str, meta: &serde_json::Value) -> EntryMetaIndex {
     EntryMetaIndex {
-        commit_id,
+        commit_id: UuidWrapper(commit_id),
         path: path.to_string(),
         creation_dt: meta.get("creation_dt")
             .and_then(|v| v.as_str())
