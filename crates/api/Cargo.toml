@@ -40,7 +40,7 @@ urlencoding = "2.1"
 
 
 tracing-opentelemetry = "0.21"
-opentelemetry = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry = "0.21"
 opentelemetry-jaeger = "0.20"
 prometheus = "0.13"
 
