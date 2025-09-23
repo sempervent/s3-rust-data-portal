@@ -94,7 +94,7 @@ impl ObservabilityService {
                 );
 
             let tracer_provider = SdkTracerProvider::builder()
-                .with_batch_exporter(exporter, runtime::Tokio)
+                .with_batch_exporter(exporter.build(), runtime::Tokio)
                 .with_config(Config::default().with_resource(resource.clone()))
                 .build();
 

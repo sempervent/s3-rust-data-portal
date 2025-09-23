@@ -16,7 +16,7 @@ pub use uuid::Uuid as RepoId;
 
 // Custom JsonSchema implementation for UUID via wrapper
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct UuidWrapper(pub Uuid);
+pub struct UuidWrapper(#[schemars(with = "String")] pub Uuid);
 
 impl From<Uuid> for UuidWrapper {
     fn from(uuid: Uuid) -> Self {
@@ -41,7 +41,7 @@ pub use schema::*;
 /// Repository information
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Repository {
-    pub id: Uuid,
+    pub id: UuidWrapper,
     pub name: String,
     pub created_at: DateTime<Utc>,
     pub created_by: String,
@@ -50,10 +50,10 @@ pub struct Repository {
 /// Reference (branch or tag)
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Reference {
-    pub repo_id: Uuid,
+    pub repo_id: UuidWrapper,
     pub name: String,
     pub kind: ReferenceKind,
-    pub commit_id: Uuid,
+    pub commit_id: UuidWrapper,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -66,9 +66,9 @@ pub enum ReferenceKind {
 /// Commit information
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Commit {
-    pub id: Uuid,
-    pub repo_id: Uuid,
-    pub parent_id: Option<Uuid>,
+    pub id: UuidWrapper,
+    pub repo_id: UuidWrapper,
+    pub parent_id: Option<UuidWrapper>,
     pub author: String,
     pub message: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -88,7 +88,7 @@ pub struct Object {
 /// Tree entry
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Entry {
-    pub commit_id: Uuid,
+    pub commit_id: UuidWrapper,
     pub path: String,
     pub object_sha256: Option<String>,
     pub meta: serde_json::Value,
@@ -98,7 +98,7 @@ pub struct Entry {
 /// ACL entry
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Acl {
-    pub repo_id: Uuid,
+    pub repo_id: UuidWrapper,
     pub subject: String,
     pub perm: Permission,
 }
@@ -150,7 +150,7 @@ pub struct CommitRequest {
     pub r#ref: String,
     pub message: Option<String>,
     pub changes: Vec<Change>,
-    pub expected_parent: Option<Uuid>,
+    pub expected_parent: Option<UuidWrapper>,
 }
 
 /// A change in a commit
@@ -174,8 +174,8 @@ pub enum ChangeOp {
 /// Response for commit creation
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CommitResponse {
-    pub commit_id: Uuid,
-    pub parent_id: Option<Uuid>,
+    pub commit_id: UuidWrapper,
+    pub parent_id: Option<UuidWrapper>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -188,7 +188,7 @@ pub struct CreateRepoRequest {
 /// Response for repository creation
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CreateRepoResponse {
-    pub id: Uuid,
+    pub id: UuidWrapper,
     pub name: String,
     pub created_at: DateTime<Utc>,
 }
@@ -227,7 +227,7 @@ pub struct SearchResponse {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SearchEntry {
     pub path: String,
-    pub commit_id: Uuid,
+    pub commit_id: UuidWrapper,
     pub meta: serde_json::Value,
     pub size: Option<i64>,
     pub media_type: Option<String>,
@@ -387,7 +387,7 @@ pub struct CanonicalMeta {
 /// Entry metadata index for fast querying
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EntryMetaIndex {
-    pub commit_id: Uuid,
+    pub commit_id: UuidWrapper,
     pub path: String,
     pub creation_dt: Option<DateTime<Utc>>,
     pub creator: Option<String>,
@@ -407,7 +407,7 @@ pub struct EntryMetaIndex {
 /// RDF artifact storage
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ArtifactRdf {
-    pub commit_id: Uuid,
+    pub commit_id: UuidWrapper,
     pub path: String,
     pub format: RdfFormat,
     pub graph: String,

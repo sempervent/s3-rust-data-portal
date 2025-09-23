@@ -138,18 +138,19 @@ impl BlackLakeJob for IndexEntryJob {
         "index_entry"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         5
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(30)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(120)
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing index entry job: repo={}, path={}, operation={:?}",
@@ -230,6 +231,7 @@ impl BlackLakeJob for SamplingJob {
         Duration::from_secs(180)
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing sampling job: repo={}, path={}, type={}",
@@ -293,10 +295,11 @@ impl BlackLakeJob for RdfEmissionJob {
         Duration::from_secs(45)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(120)
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing RDF emission job: repo={}, path={}, formats={:?}",
@@ -353,7 +356,7 @@ impl BlackLakeJob for AntivirusScanJob {
         "antivirus_scan"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         2
     }
     
@@ -365,6 +368,7 @@ impl BlackLakeJob for AntivirusScanJob {
         Duration::from_secs(300)
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing antivirus scan job: repo={}, path={}, size={}",
@@ -412,7 +416,7 @@ impl BlackLakeJob for ExportJob {
         "export"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         2
     }
     
@@ -424,6 +428,7 @@ impl BlackLakeJob for ExportJob {
         Duration::from_secs(1800) // 30 minutes
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing export job: export_id={}, repo={}",
@@ -474,6 +479,7 @@ impl BlackLakeJob for FullReindexJob {
         Duration::from_secs(3600) // 1 hour
     }
     
+    #[async_trait::async_trait]
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError> {
         tracing::info!(
             "Processing full reindex job: repo_id={:?}, since_commit={:?}, batch_size={}",
@@ -572,7 +578,7 @@ impl JobQueueConfig {
 
 /// Job manager for handling all BlackLake jobs
 pub struct JobManager {
-    storage: RedisStorage<String>,
+    storage: RedisStorage<String, String>,
     configs: Vec<JobQueueConfig>,
 }
 
@@ -593,7 +599,7 @@ impl JobManager {
     }
     
     /// Enqueue an index entry job
-    pub async fn enqueue_index_entry(&self, job: IndexEntryJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_index_entry(&mut self, job: IndexEntryJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
@@ -606,7 +612,7 @@ impl JobManager {
     }
     
     /// Enqueue a sampling job
-    pub async fn enqueue_sampling(&self, job: SamplingJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_sampling(&mut self, job: SamplingJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
@@ -619,7 +625,7 @@ impl JobManager {
     }
     
     /// Enqueue an RDF emission job
-    pub async fn enqueue_rdf_emission(&self, job: RdfEmissionJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_rdf_emission(&mut self, job: RdfEmissionJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
@@ -632,7 +638,7 @@ impl JobManager {
     }
     
     /// Enqueue an antivirus scan job
-    pub async fn enqueue_antivirus_scan(&self, job: AntivirusScanJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_antivirus_scan(&mut self, job: AntivirusScanJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
@@ -645,7 +651,7 @@ impl JobManager {
     }
     
     /// Enqueue an export job
-    pub async fn enqueue_export(&self, job: ExportJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_export(&mut self, job: ExportJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
@@ -658,7 +664,7 @@ impl JobManager {
     }
     
     /// Enqueue a full reindex job
-    pub async fn enqueue_full_reindex(&self, job: FullReindexJob) -> Result<JobId, JobError> {
+    pub async fn enqueue_full_reindex(&mut self, job: FullReindexJob) -> Result<JobId, JobError> {
         let job_id = JobId::new_v4();
         let job_request = JobRequest::new(job_id, Box::new(job));
         
