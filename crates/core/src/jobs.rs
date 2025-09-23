@@ -2,18 +2,42 @@
 // Week 6: Advanced job processing with Redis backend
 
 use apalis_core::{
-    context::JobContext,
-    job::{Job, JobId},
-    request::Request,
-    response::Response,
     storage::Storage,
-    worker::WorkerId,
 };
 use apalis_redis::RedisStorage;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
 use uuid::Uuid;
+
+// Job types
+pub type JobId = Uuid;
+
+pub trait Job: Send + Sync + 'static {
+    fn name(&self) -> &str;
+}
+
+// Job context and response types
+pub struct JobContext {
+    pub job_id: JobId,
+    pub worker_id: String,
+}
+
+pub enum JobResponse {
+    Success,
+    Failure(String),
+}
+
+pub struct JobRequest {
+    pub job_id: JobId,
+    pub job: Box<dyn BlackLakeJob>,
+}
+
+impl JobRequest {
+    pub fn new(job_id: JobId, job: Box<dyn BlackLakeJob>) -> Self {
+        Self { job_id, job }
+    }
+}
 
 /// Job processing errors
 #[derive(Debug, Error)]
