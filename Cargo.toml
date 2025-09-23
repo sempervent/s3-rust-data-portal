@@ -65,7 +65,7 @@ base64 = "0.21"
 url = "2.4"
 
 # RDF support
-sophia = { version = "0.8", features = ["all"] }
+sophia = "0.8"
 regex = "1"
 
 # Job system
