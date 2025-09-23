@@ -138,7 +138,7 @@ impl SessionManager {
             Some(data) => {
                 // Check if session is expired
                 let now = chrono::Utc::now();
-                if now - data.last_activity > self.config.ttl.to_std().unwrap_or_default() {
+                if now - data.last_activity > chrono::Duration::from_std(self.config.ttl).unwrap_or_default() {
                     return Err(SessionError::Expired);
                 }
                 

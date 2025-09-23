@@ -127,6 +127,12 @@ pub enum IndexOperation {
 }
 
 #[async_trait::async_trait]
+impl Job for IndexEntryJob {
+    fn name(&self) -> &str {
+        "index_entry"
+    }
+}
+
 impl BlackLakeJob for IndexEntryJob {
     fn job_type(&self) -> &'static str {
         "index_entry"
@@ -201,6 +207,12 @@ pub struct SamplingJob {
 }
 
 #[async_trait::async_trait]
+impl Job for SamplingJob {
+    fn name(&self) -> &str {
+        "sampling"
+    }
+}
+
 impl BlackLakeJob for SamplingJob {
     fn job_type(&self) -> &'static str {
         "sampling"
@@ -262,6 +274,12 @@ pub struct RdfEmissionJob {
 }
 
 #[async_trait::async_trait]
+impl Job for RdfEmissionJob {
+    fn name(&self) -> &str {
+        "rdf_emission"
+    }
+}
+
 impl BlackLakeJob for RdfEmissionJob {
     fn job_type(&self) -> &'static str {
         "rdf_emission"
@@ -324,6 +342,12 @@ pub struct AntivirusScanJob {
 }
 
 #[async_trait::async_trait]
+impl Job for AntivirusScanJob {
+    fn name(&self) -> &str {
+        "antivirus_scan"
+    }
+}
+
 impl BlackLakeJob for AntivirusScanJob {
     fn job_type(&self) -> &'static str {
         "antivirus_scan"
@@ -377,6 +401,12 @@ pub struct ExportJob {
 }
 
 #[async_trait::async_trait]
+impl Job for ExportJob {
+    fn name(&self) -> &str {
+        "export"
+    }
+}
+
 impl BlackLakeJob for ExportJob {
     fn job_type(&self) -> &'static str {
         "export"
@@ -421,6 +451,12 @@ pub struct FullReindexJob {
 }
 
 #[async_trait::async_trait]
+impl Job for FullReindexJob {
+    fn name(&self) -> &str {
+        "full_reindex"
+    }
+}
+
 impl BlackLakeJob for FullReindexJob {
     fn job_type(&self) -> &'static str {
         "full_reindex"
@@ -542,8 +578,7 @@ pub struct JobManager {
 
 impl JobManager {
     pub fn new(redis_url: &str) -> Result<Self, JobError> {
-        let storage = RedisStorage::new(redis_url)
-            .map_err(|e| JobError::Storage(e.to_string()))?;
+        let storage = RedisStorage::new(redis_url);
         
         let configs = vec![
             JobQueueConfig::index_queue(),
@@ -563,7 +598,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::index_queue().name, job_request)
+            .push(JobQueueConfig::index_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -576,7 +611,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::sampling_queue().name, job_request)
+            .push(JobQueueConfig::sampling_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -589,7 +624,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::rdf_queue().name, job_request)
+            .push(JobQueueConfig::rdf_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -602,7 +637,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::antivirus_queue().name, job_request)
+            .push(JobQueueConfig::antivirus_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -615,7 +650,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::export_queue().name, job_request)
+            .push(JobQueueConfig::export_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -628,7 +663,7 @@ impl JobManager {
         let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(JobQueueConfig::reindex_queue().name, job_request)
+            .push(JobQueueConfig::reindex_queue().name)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         

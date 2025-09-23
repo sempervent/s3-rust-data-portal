@@ -7,25 +7,26 @@ use uuid::Uuid;
 use schemars::JsonSchema;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
-use sophia::turtle::serializer::TurtleSerializer;
+use sophia::turtle::TurtleSerializer;
 use sophia::api::term::Term;
 use url::Url;
 
 // Re-export common types
 pub use uuid::Uuid as RepoId;
 
-// Custom JsonSchema implementation for UUID
-impl JsonSchema for Uuid {
-    fn schema_name() -> String {
-        "Uuid".to_string()
+// Custom JsonSchema implementation for UUID via wrapper
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct UuidWrapper(pub Uuid);
+
+impl From<Uuid> for UuidWrapper {
+    fn from(uuid: Uuid) -> Self {
+        UuidWrapper(uuid)
     }
-    
-    fn json_schema(_gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-        schemars::schema::Schema::Object(schemars::schema::SchemaObject {
-            instance_type: Some(schemars::schema::InstanceType::String.into()),
-            format: Some("uuid".to_string()),
-            ..Default::default()
-        })
+}
+
+impl From<UuidWrapper> for Uuid {
+    fn from(wrapper: UuidWrapper) -> Self {
+        wrapper.0
     }
 }
 pub use uuid::Uuid as CommitId;
@@ -426,7 +427,7 @@ pub fn canonical_to_dc_jsonld(subject_iri: &str, meta: &CanonicalMeta) -> serde_
     let mut doc = serde_json::Map::new();
     
     // Add context
-    doc.insert("@context".to_string(), DC_CONTEXT["@context"].clone());
+    doc.insert("@context".to_string(), dc_context()["@context"].clone());
     doc.insert("@id".to_string(), serde_json::Value::String(subject_iri.to_string()));
     
     // Map canonical fields to Dublin Core

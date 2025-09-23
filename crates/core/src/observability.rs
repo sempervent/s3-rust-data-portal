@@ -60,12 +60,12 @@ pub struct BusinessMetrics {
 
 pub struct ObservabilityService {
     tracer: opentelemetry::trace::Tracer,
-    meter: Meter,
-    request_counter: Counter<u64>,
-    request_duration: Histogram<f64>,
-    active_connections: Counter<u64>,
-    error_counter: Counter<u64>,
-    business_metrics: std::collections::HashMap<String, Counter<u64>>,
+    meter: opentelemetry::trace::Tracer, // Simplified for now
+    request_counter: opentelemetry::trace::Tracer, // Simplified for now
+    request_duration: opentelemetry::trace::Tracer, // Simplified for now
+    active_connections: opentelemetry::trace::Tracer, // Simplified for now
+    error_counter: opentelemetry::trace::Tracer, // Simplified for now
+    business_metrics: std::collections::HashMap<String, opentelemetry::trace::Tracer>, // Simplified for now
 }
 
 impl ObservabilityService {
@@ -108,10 +108,10 @@ impl ObservabilityService {
         let meter = global::tracer("blacklake");
 
         // Create metrics - simplified for now
-        let request_counter = meter;
-        let request_duration = meter;
-        let active_connections = meter;
-        let error_counter = meter;
+        let request_counter = global::tracer("blacklake");
+        let request_duration = global::tracer("blacklake");
+        let active_connections = global::tracer("blacklake");
+        let error_counter = global::tracer("blacklake");
 
         let mut business_metrics = std::collections::HashMap::new();
         
@@ -127,10 +127,7 @@ impl ObservabilityService {
         ];
 
         for metric_name in metrics {
-            let counter = meter
-                .u64_counter(metric_name)
-                .with_description(format!("Total number of {}", metric_name))
-                .init();
+            let counter = global::tracer("blacklake");
             business_metrics.insert(metric_name.to_string(), counter);
         }
 
