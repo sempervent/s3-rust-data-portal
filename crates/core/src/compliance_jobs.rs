@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use tracing::{info, warn, error};
@@ -18,6 +18,21 @@ pub struct ComplianceJob {
     pub metadata: serde_json::Value,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for ComplianceJob {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(ComplianceJob {
+            id: row.get("id"),
+            job_type: ComplianceJobType::from_i32(row.get("job_type")).unwrap_or(ComplianceJobType::RetentionCheck),
+            status: ComplianceJobStatus::from_i32(row.get("status")).unwrap_or(ComplianceJobStatus::Pending),
+            created_at: row.get("created_at"),
+            started_at: row.get("started_at"),
+            completed_at: row.get("completed_at"),
+            error_message: row.get("error_message"),
+            metadata: row.get("metadata"),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ComplianceJobType {
     RetentionCheck,
@@ -27,6 +42,19 @@ pub enum ComplianceJobType {
     RetentionPolicyApplication,
 }
 
+impl ComplianceJobType {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(ComplianceJobType::RetentionCheck),
+            1 => Some(ComplianceJobType::LegalHoldExpiry),
+            2 => Some(ComplianceJobType::ComplianceExport),
+            3 => Some(ComplianceJobType::AuditLogCleanup),
+            4 => Some(ComplianceJobType::RetentionPolicyApplication),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ComplianceJobStatus {
     Pending,
@@ -34,6 +62,19 @@ pub enum ComplianceJobStatus {
     Completed,
     Failed,
     Cancelled,
+}
+
+impl ComplianceJobStatus {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(ComplianceJobStatus::Pending),
+            1 => Some(ComplianceJobStatus::Running),
+            2 => Some(ComplianceJobStatus::Completed),
+            3 => Some(ComplianceJobStatus::Failed),
+            4 => Some(ComplianceJobStatus::Cancelled),
+            _ => None,
+        }
+    }
 }
 
 pub struct ComplianceJobProcessor {
@@ -158,7 +199,7 @@ impl ComplianceJobProcessor {
                 "UPDATE legal_hold SET status = $1 WHERE id = $2"
             )
             .bind(LegalHoldStatus::Expired as i32)
-            .bind(hold.id)
+            .bind(hold.get("id"))
             .execute(&self.pool)
             .await?;
 
@@ -166,17 +207,17 @@ impl ComplianceJobProcessor {
             let active_holds = sqlx::query(
                 "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2"
             )
-            .bind(hold.entry_id)
+            .bind(hold.get("entry_id"))
             .bind(LegalHoldStatus::Active as i32)
             .fetch_one(&self.pool)
             .await?;
 
             // If no active holds, remove legal hold flag from entry
-            if active_holds.count.unwrap_or(0) == 0 {
+            if active_holds.get::<i64, _>("count").unwrap_or(0) == 0 {
                 sqlx::query(
                     "UPDATE repo_entry SET legal_hold = false WHERE id = $1"
                 )
-                .bind(hold.entry_id)
+                .bind(hold.get("entry_id"))
                 .execute(&self.pool)
                 .await?;
             }
@@ -186,16 +227,16 @@ impl ComplianceJobProcessor {
                 Uuid::new_v4(), // System user
                 "legal_hold_expired",
                 "legal_hold",
-                hold.id,
+                hold.get("id"),
                 serde_json::json!({
-                    "entry_id": hold.entry_id,
+                    "entry_id": hold.get("entry_id"),
                     "action": "expired"
                 }),
                 None,
                 None,
             ).await?;
 
-            info!("Legal hold {} expired for entry {}", hold.id, hold.entry_id);
+            info!("Legal hold {} expired for entry {}", hold.get::<Uuid, _>("id"), hold.get::<Uuid, _>("entry_id"));
         }
 
         Ok(())
@@ -220,12 +261,12 @@ impl ComplianceJobProcessor {
         .ok_or_else(|| anyhow::anyhow!("Export not found"))?;
 
         // Generate export file based on type
-        let file_path = match export.export_type.as_str() {
-            "audit_logs" => self.export_audit_logs(&export.filters, export.created_by).await?,
-            "retention_status" => self.export_retention_status().await?,
-            "legal_holds" => self.export_legal_holds(&export.filters).await?,
-            "compliance_report" => self.export_compliance_report(&export.filters).await?,
-            _ => return Err(anyhow::anyhow!("Unknown export type: {}", export.export_type)),
+        let file_path = match export.get::<i32, _>("export_type") {
+            0 => self.export_audit_logs(&export.get::<serde_json::Value, _>("filters"), export.get::<Uuid, _>("created_by")).await?,
+            1 => self.export_retention_status().await?,
+            2 => self.export_legal_holds(&export.get::<serde_json::Value, _>("filters")).await?,
+            3 => self.export_compliance_report(&export.get::<serde_json::Value, _>("filters")).await?,
+            _ => return Err(anyhow::anyhow!("Unknown export type: {}", export.get::<i32, _>("export_type"))),
         };
 
         // Update export with file path

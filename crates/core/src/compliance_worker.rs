@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{info, error, warn};
@@ -61,7 +61,7 @@ impl ComplianceWorker {
         .await?;
 
         let should_schedule_retention_check = match last_retention_check {
-            Some(Some(last_check)) => {
+            Some(last_check) => {
                 let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check).num_days();
                 days_since_last_check >= 1
             }
@@ -86,8 +86,8 @@ impl ComplianceWorker {
         .await?;
 
         let should_schedule_legal_hold_check = match last_legal_hold_check {
-            Some(Some(last_check)) => {
-                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check).num_days();
+            Some(last_check) => {
+                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check.get::<DateTime<Utc>, _>("last_check")).num_days();
                 days_since_last_check >= 1
             }
             _ => true, // Never run before
@@ -111,8 +111,8 @@ impl ComplianceWorker {
         .await?;
 
         let should_schedule_audit_cleanup = match last_audit_cleanup {
-            Some(Some(last_check)) => {
-                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check).num_days();
+            Some(last_check) => {
+                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check.get::<DateTime<Utc>, _>("last_check")).num_days();
                 days_since_last_check >= 7
             }
             _ => true, // Never run before
@@ -144,11 +144,11 @@ impl ComplianceWorker {
         .await?;
 
         Ok(serde_json::json!({
-            "total_jobs": stats.total_jobs.unwrap_or(0),
-            "pending_jobs": stats.pending_jobs.unwrap_or(0),
-            "running_jobs": stats.running_jobs.unwrap_or(0),
-            "completed_jobs": stats.completed_jobs.unwrap_or(0),
-            "failed_jobs": stats.failed_jobs.unwrap_or(0)
+            "total_jobs": stats.get::<i64, _>("total_jobs").unwrap_or(0),
+            "pending_jobs": stats.get::<i64, _>("pending_jobs").unwrap_or(0),
+            "running_jobs": stats.get::<i64, _>("running_jobs").unwrap_or(0),
+            "completed_jobs": stats.get::<i64, _>("completed_jobs").unwrap_or(0),
+            "failed_jobs": stats.get::<i64, _>("failed_jobs").unwrap_or(0)
         }))
     }
 
@@ -168,14 +168,14 @@ impl ComplianceWorker {
 
         let job_values: Vec<serde_json::Value> = jobs.into_iter().map(|job| {
             serde_json::json!({
-                "id": job.id,
-                "job_type": job.job_type,
-                "status": job.status,
-                "created_at": job.created_at,
-                "started_at": job.started_at,
-                "completed_at": job.completed_at,
-                "error_message": job.error_message,
-                "metadata": job.metadata
+                "id": job.get::<Uuid, _>("id"),
+                "job_type": job.get::<i32, _>("job_type"),
+                "status": job.get::<i32, _>("status"),
+                "created_at": job.get::<DateTime<Utc>, _>("created_at"),
+                "started_at": job.get::<Option<DateTime<Utc>>, _>("started_at"),
+                "completed_at": job.get::<Option<DateTime<Utc>>, _>("completed_at"),
+                "error_message": job.get::<Option<String>, _>("error_message"),
+                "metadata": job.get::<serde_json::Value, _>("metadata")
             })
         }).collect();
 

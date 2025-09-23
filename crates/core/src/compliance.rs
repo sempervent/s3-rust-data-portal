@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use tracing::{info, warn, error};
@@ -16,6 +16,20 @@ pub struct RetentionPolicy {
     pub updated_at: DateTime<Utc>,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for RetentionPolicy {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(RetentionPolicy {
+            id: row.get("id"),
+            name: row.get("name"),
+            description: row.get("description"),
+            retention_days: row.get("retention_days"),
+            legal_hold_override: row.get("legal_hold_override"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LegalHold {
     pub id: Uuid,
@@ -27,11 +41,36 @@ pub struct LegalHold {
     pub status: LegalHoldStatus,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for LegalHold {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(LegalHold {
+            id: row.get("id"),
+            entry_id: row.get("entry_id"),
+            reason: row.get("reason"),
+            created_by: row.get("created_by"),
+            created_at: row.get("created_at"),
+            expires_at: row.get("expires_at"),
+            status: LegalHoldStatus::from_i32(row.get("status")).unwrap_or(LegalHoldStatus::Active),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LegalHoldStatus {
     Active,
     Released,
     Expired,
+}
+
+impl LegalHoldStatus {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(LegalHoldStatus::Active),
+            1 => Some(LegalHoldStatus::Released),
+            2 => Some(LegalHoldStatus::Expired),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +86,22 @@ pub struct AuditLog {
     pub created_at: DateTime<Utc>,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for AuditLog {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(AuditLog {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            action: row.get("action"),
+            resource_type: row.get("resource_type"),
+            resource_id: row.get("resource_id"),
+            details: row.get("details"),
+            ip_address: row.get("ip_address"),
+            user_agent: row.get("user_agent"),
+            created_at: row.get("created_at"),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComplianceExport {
     pub id: Uuid,
@@ -59,6 +114,21 @@ pub struct ComplianceExport {
     pub completed_at: Option<DateTime<Utc>>,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for ComplianceExport {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(ComplianceExport {
+            id: row.get("id"),
+            export_type: ExportType::from_i32(row.get("export_type")).unwrap_or(ExportType::AuditLogs),
+            filters: row.get("filters"),
+            status: ExportStatus::from_i32(row.get("status")).unwrap_or(ExportStatus::Pending),
+            file_path: row.get("file_path"),
+            created_by: row.get("created_by"),
+            created_at: row.get("created_at"),
+            completed_at: row.get("completed_at"),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExportType {
     AuditLogs,
@@ -67,12 +137,36 @@ pub enum ExportType {
     ComplianceReport,
 }
 
+impl ExportType {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(ExportType::AuditLogs),
+            1 => Some(ExportType::RetentionStatus),
+            2 => Some(ExportType::LegalHolds),
+            3 => Some(ExportType::ComplianceReport),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExportStatus {
     Pending,
     Processing,
     Completed,
     Failed,
+}
+
+impl ExportStatus {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(ExportStatus::Pending),
+            1 => Some(ExportStatus::Processing),
+            2 => Some(ExportStatus::Completed),
+            3 => Some(ExportStatus::Failed),
+            _ => None,
+        }
+    }
 }
 
 pub struct ComplianceService {
@@ -362,7 +456,7 @@ impl ComplianceService {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(entries.into_iter().map(|row| row.id).collect())
+        Ok(entries.into_iter().map(|row| row.get("id")).collect())
     }
 
     /// Get entries under legal hold
@@ -374,7 +468,7 @@ impl ComplianceService {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(entries.into_iter().map(|row| row.entry_id).collect())
+        Ok(entries.into_iter().map(|row| row.get("entry_id")).collect())
     }
 
     /// Get retention status summary
@@ -391,10 +485,10 @@ impl ComplianceService {
         .await?;
 
         Ok(serde_json::json!({
-            "total_entries": stats.total_entries.unwrap_or(0),
-            "legal_hold_entries": stats.legal_hold_entries.unwrap_or(0),
-            "expired_retention": stats.expired_retention.unwrap_or(0),
-            "active_retention": stats.active_retention.unwrap_or(0)
+            "total_entries": stats.get::<i64, _>("total_entries").unwrap_or(0),
+            "legal_hold_entries": stats.get::<i64, _>("legal_hold_entries").unwrap_or(0),
+            "expired_retention": stats.get::<i64, _>("expired_retention").unwrap_or(0),
+            "active_retention": stats.get::<i64, _>("active_retention").unwrap_or(0)
         }))
     }
 }
