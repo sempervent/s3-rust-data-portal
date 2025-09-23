@@ -227,7 +227,7 @@ impl BlackLakeJob for SamplingJob {
         Duration::from_secs(60)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(180)
     }
     
@@ -291,7 +291,7 @@ impl BlackLakeJob for RdfEmissionJob {
         3
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(45)
     }
     
@@ -360,7 +360,7 @@ impl BlackLakeJob for AntivirusScanJob {
         2
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(120)
     }
     
@@ -420,11 +420,11 @@ impl BlackLakeJob for ExportJob {
         2
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(300)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(1800) // 30 minutes
     }
     
@@ -467,15 +467,15 @@ impl BlackLakeJob for FullReindexJob {
         "full_reindex"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         1 // Don't retry full reindex jobs
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(0)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(3600) // 1 hour
     }
     
@@ -578,7 +578,7 @@ impl JobQueueConfig {
 
 /// Job manager for handling all BlackLake jobs
 pub struct JobManager {
-    storage: RedisStorage<String>,
+    storage: RedisStorage<String, String>,
     configs: Vec<JobQueueConfig>,
 }
 

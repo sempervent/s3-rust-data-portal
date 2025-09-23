@@ -87,7 +87,7 @@ impl SessionManager {
     pub fn new(redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
         let redis_client = redis::Client::open(redis_url)
             .map_err(|e| SessionError::Storage(e.to_string()))?;
-        let store = RedisStore::new(redis_client);
+        let store = RedisStore::new(redis_client.into());
         
         Ok(Self { config, store })
     }

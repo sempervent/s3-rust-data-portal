@@ -59,13 +59,13 @@ pub struct BusinessMetrics {
 }
 
 pub struct ObservabilityService {
-    tracer: Box<dyn opentelemetry::trace::Tracer>,
-    meter: Box<dyn opentelemetry::trace::Tracer>, // Simplified for now
-    request_counter: Box<dyn opentelemetry::trace::Tracer>, // Simplified for now
-    request_duration: Box<dyn opentelemetry::trace::Tracer>, // Simplified for now
-    active_connections: Box<dyn opentelemetry::trace::Tracer>, // Simplified for now
-    error_counter: Box<dyn opentelemetry::trace::Tracer>, // Simplified for now
-    business_metrics: std::collections::HashMap<String, Box<dyn opentelemetry::trace::Tracer>>, // Simplified for now
+    tracer: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>,
+    meter: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>, // Simplified for now
+    request_counter: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>, // Simplified for now
+    request_duration: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>, // Simplified for now
+    active_connections: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>, // Simplified for now
+    error_counter: Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>, // Simplified for now
+    business_metrics: std::collections::HashMap<String, Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>>, // Simplified for now
 }
 
 impl ObservabilityService {
@@ -94,7 +94,7 @@ impl ObservabilityService {
                 );
 
             let tracer_provider = SdkTracerProvider::builder()
-                .with_batch_exporter(exporter, runtime::Tokio)
+                .with_batch_exporter(exporter.build(), runtime::Tokio)
                 .with_config(Config::default().with_resource(resource.clone()))
                 .build();
 
@@ -105,13 +105,13 @@ impl ObservabilityService {
         };
 
         // Initialize metrics - simplified for now
-        let meter = Box::new(global::tracer("blacklake"));
+        let meter = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
 
         // Create metrics - simplified for now
-        let request_counter = Box::new(global::tracer("blacklake"));
-        let request_duration = Box::new(global::tracer("blacklake"));
-        let active_connections = Box::new(global::tracer("blacklake"));
-        let error_counter = Box::new(global::tracer("blacklake"));
+        let request_counter = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
+        let request_duration = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
+        let active_connections = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
+        let error_counter = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
 
         let mut business_metrics = std::collections::HashMap::new();
         
@@ -127,12 +127,12 @@ impl ObservabilityService {
         ];
 
         for metric_name in metrics {
-            let counter = Box::new(global::tracer("blacklake"));
+            let counter = Box::new(global::tracer("blacklake")) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>;
             business_metrics.insert(metric_name.to_string(), counter);
         }
 
         Ok(Self {
-            tracer: Box::new(tracer),
+            tracer: Box::new(tracer) as Box<dyn opentelemetry::trace::Tracer<Span = opentelemetry::trace::Span>>,
             meter,
             request_counter,
             request_duration,

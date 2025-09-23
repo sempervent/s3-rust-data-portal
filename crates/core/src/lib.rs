@@ -7,7 +7,7 @@ use uuid::Uuid;
 use schemars::JsonSchema;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
-use sophia::turtle::serializer::TurtleSerializer;
+use sophia::turtle::TurtleSerializer;
 use sophia::api::term::Term;
 use url::Url;
 
