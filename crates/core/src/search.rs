@@ -394,7 +394,7 @@ impl SolrClient {
         
         let params = vec![
             ("action", "CLUSTERSTATUS"),
-            ("collection", self.config.collection.clone()),
+            ("collection", &self.config.collection),
         ];
         
         let response = self.client

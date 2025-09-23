@@ -138,7 +138,7 @@ impl SessionManager {
             Some(data) => {
                 // Check if session is expired
                 let now = chrono::Utc::now();
-                if now - data.last_activity > self.config.ttl {
+                if now - data.last_activity > self.config.ttl.to_std().unwrap_or_default() {
                     return Err(SessionError::Expired);
                 }
                 
@@ -191,8 +191,7 @@ impl SessionManager {
     
     /// Destroy session
     pub async fn destroy_session(&self, session: &Session) -> Result<(), SessionError> {
-        session.delete("user_data")
-            .map_err(|_| SessionError::Storage("Failed to delete session data".to_string()))?;
+        session.delete();
         
         Ok(())
     }

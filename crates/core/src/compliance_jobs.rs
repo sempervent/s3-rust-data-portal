@@ -346,7 +346,7 @@ impl ComplianceJobProcessor {
             })
             .unwrap_or_default();
 
-        for entry_id in entry_ids {
+        for entry_id in &entry_ids {
             self.compliance_service.apply_retention_policy(entry_id, policy_id).await?;
         }
 

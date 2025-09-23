@@ -206,11 +206,11 @@ impl BlackLakeJob for SamplingJob {
         "sampling"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         3
     }
     
-    fn retry_delay() -> Duration {
+    fn retry_delay(&self) -> Duration {
         Duration::from_secs(60)
     }
     
@@ -267,7 +267,7 @@ impl BlackLakeJob for RdfEmissionJob {
         "rdf_emission"
     }
     
-    fn max_attempts() -> u32 {
+    fn max_attempts(&self) -> u32 {
         3
     }
     
@@ -337,7 +337,7 @@ impl BlackLakeJob for AntivirusScanJob {
         Duration::from_secs(120)
     }
     
-    fn timeout() -> Duration {
+    fn timeout(&self) -> Duration {
         Duration::from_secs(300)
     }
     
@@ -541,9 +541,8 @@ pub struct JobManager {
 }
 
 impl JobManager {
-    pub async fn new(redis_url: &str) -> Result<Self, JobError> {
+    pub fn new(redis_url: &str) -> Result<Self, JobError> {
         let storage = RedisStorage::new(redis_url)
-            .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
         let configs = vec![
@@ -560,11 +559,11 @@ impl JobManager {
     
     /// Enqueue an index entry job
     pub async fn enqueue_index_entry(&self, job: IndexEntryJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::index_queue().name, job_request)
+            .push(JobQueueConfig::index_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -573,11 +572,11 @@ impl JobManager {
     
     /// Enqueue a sampling job
     pub async fn enqueue_sampling(&self, job: SamplingJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::sampling_queue().name, job_request)
+            .push(JobQueueConfig::sampling_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -586,11 +585,11 @@ impl JobManager {
     
     /// Enqueue an RDF emission job
     pub async fn enqueue_rdf_emission(&self, job: RdfEmissionJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::rdf_queue().name, job_request)
+            .push(JobQueueConfig::rdf_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -599,11 +598,11 @@ impl JobManager {
     
     /// Enqueue an antivirus scan job
     pub async fn enqueue_antivirus_scan(&self, job: AntivirusScanJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::antivirus_queue().name, job_request)
+            .push(JobQueueConfig::antivirus_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -612,11 +611,11 @@ impl JobManager {
     
     /// Enqueue an export job
     pub async fn enqueue_export(&self, job: ExportJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::export_queue().name, job_request)
+            .push(JobQueueConfig::export_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
@@ -625,11 +624,11 @@ impl JobManager {
     
     /// Enqueue a full reindex job
     pub async fn enqueue_full_reindex(&self, job: FullReindexJob) -> Result<JobId, JobError> {
-        let job_id = JobId::generate();
-        let job_request = JobRequest::new(job_id, job);
+        let job_id = JobId::new_v4();
+        let job_request = JobRequest::new(job_id, Box::new(job));
         
         self.storage
-            .push(&JobQueueConfig::reindex_queue().name, job_request)
+            .push(JobQueueConfig::reindex_queue().name, job_request)
             .await
             .map_err(|e| JobError::Storage(e.to_string()))?;
         
