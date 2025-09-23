@@ -52,11 +52,11 @@ impl ComplianceWorker {
     /// Schedule periodic compliance jobs
     async fn schedule_periodic_jobs(&self) -> Result<()> {
         // Check if we need to schedule a retention check (daily)
-        let last_retention_check = sqlx::query!(
-            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2",
-            ComplianceJobType::RetentionCheck as _,
-            "completed"
+        let last_retention_check = sqlx::query(
+            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2"
         )
+        .bind(ComplianceJobType::RetentionCheck as i32)
+        .bind("completed")
         .fetch_optional(&self.pool)
         .await?;
 
@@ -77,11 +77,11 @@ impl ComplianceWorker {
         }
 
         // Check if we need to schedule a legal hold expiry check (daily)
-        let last_legal_hold_check = sqlx::query!(
-            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2",
-            ComplianceJobType::LegalHoldExpiry as _,
-            "completed"
+        let last_legal_hold_check = sqlx::query(
+            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2"
         )
+        .bind(ComplianceJobType::LegalHoldExpiry as i32)
+        .bind("completed")
         .fetch_optional(&self.pool)
         .await?;
 
@@ -102,11 +102,11 @@ impl ComplianceWorker {
         }
 
         // Check if we need to schedule audit log cleanup (weekly)
-        let last_audit_cleanup = sqlx::query!(
-            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2",
-            ComplianceJobType::AuditLogCleanup as _,
-            "completed"
+        let last_audit_cleanup = sqlx::query(
+            "SELECT MAX(created_at) as last_check FROM compliance_job WHERE job_type = $1 AND status = $2"
         )
+        .bind(ComplianceJobType::AuditLogCleanup as i32)
+        .bind("completed")
         .fetch_optional(&self.pool)
         .await?;
 
@@ -131,7 +131,7 @@ impl ComplianceWorker {
 
     /// Get compliance worker statistics
     pub async fn get_stats(&self) -> Result<serde_json::Value> {
-        let stats = sqlx::query!(
+        let stats = sqlx::query(
             "SELECT 
                 COUNT(*) as total_jobs,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_jobs,
@@ -156,13 +156,13 @@ impl ComplianceWorker {
     pub async fn get_recent_jobs(&self, limit: Option<i64>) -> Result<Vec<serde_json::Value>> {
         let limit = limit.unwrap_or(50);
         
-        let jobs = sqlx::query!(
-            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata 
+        let jobs = sqlx::query(
+            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata
              FROM compliance_job 
              ORDER BY created_at DESC 
-             LIMIT $1",
-            limit
+             LIMIT $1"
         )
+        .bind(limit)
         .fetch_all(&self.pool)
         .await?;
 

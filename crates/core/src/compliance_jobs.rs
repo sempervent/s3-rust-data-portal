@@ -52,11 +52,10 @@ impl ComplianceJobProcessor {
 
     /// Process all pending compliance jobs
     pub async fn process_pending_jobs(&self) -> Result<()> {
-        let pending_jobs = sqlx::query_as!(
-            ComplianceJob,
-            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata FROM compliance_job WHERE status = $1 ORDER BY created_at ASC",
-            ComplianceJobStatus::Pending as _
+        let pending_jobs = sqlx::query_as::<_, ComplianceJob>(
+            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata FROM compliance_job WHERE status = $1 ORDER BY created_at ASC"
         )
+        .bind(ComplianceJobStatus::Pending as i32)
         .fetch_all(&self.pool)
         .await?;
 
@@ -65,12 +64,12 @@ impl ComplianceJobProcessor {
                 error!("Failed to process compliance job {}: {}", job.id, e);
                 
                 // Mark job as failed
-                sqlx::query!(
-                    "UPDATE compliance_job SET status = $1, error_message = $2, completed_at = NOW() WHERE id = $3",
-                    ComplianceJobStatus::Failed as _,
-                    e.to_string(),
-                    job.id
+                sqlx::query(
+                    "UPDATE compliance_job SET status = $1, error_message = $2, completed_at = NOW() WHERE id = $3"
                 )
+                .bind(ComplianceJobStatus::Failed as i32)
+                .bind(e.to_string())
+                .bind(job.id)
                 .execute(&self.pool)
                 .await?;
             }
@@ -84,11 +83,11 @@ impl ComplianceJobProcessor {
         info!("Processing compliance job: {:?}", job.job_type);
 
         // Mark job as running
-        sqlx::query!(
-            "UPDATE compliance_job SET status = $1, started_at = NOW() WHERE id = $2",
-            ComplianceJobStatus::Running as _,
-            job.id
+        sqlx::query(
+            "UPDATE compliance_job SET status = $1, started_at = NOW() WHERE id = $2"
         )
+        .bind(ComplianceJobStatus::Running as i32)
+        .bind(job.id)
         .execute(&self.pool)
         .await?;
 
@@ -101,11 +100,11 @@ impl ComplianceJobProcessor {
         };
 
         // Mark job as completed
-        sqlx::query!(
-            "UPDATE compliance_job SET status = $1, completed_at = NOW() WHERE id = $2",
-            ComplianceJobStatus::Completed as _,
-            job.id
+        sqlx::query(
+            "UPDATE compliance_job SET status = $1, completed_at = NOW() WHERE id = $2"
         )
+        .bind(ComplianceJobStatus::Completed as i32)
+        .bind(job.id)
         .execute(&self.pool)
         .await?;
 
@@ -146,38 +145,38 @@ impl ComplianceJobProcessor {
     async fn process_legal_hold_expiry(&self) -> Result<()> {
         info!("Processing legal hold expiry check");
 
-        let expired_holds = sqlx::query!(
-            "SELECT id, entry_id FROM legal_hold WHERE expires_at IS NOT NULL AND expires_at <= NOW() AND status = $1",
-            LegalHoldStatus::Active as _
+        let expired_holds = sqlx::query(
+            "SELECT id, entry_id FROM legal_hold WHERE expires_at IS NOT NULL AND expires_at <= NOW() AND status = $1"
         )
+        .bind(LegalHoldStatus::Active as i32)
         .fetch_all(&self.pool)
         .await?;
 
         for hold in expired_holds {
             // Mark legal hold as expired
-            sqlx::query!(
-                "UPDATE legal_hold SET status = $1 WHERE id = $2",
-                LegalHoldStatus::Expired as _,
-                hold.id
+            sqlx::query(
+                "UPDATE legal_hold SET status = $1 WHERE id = $2"
             )
+            .bind(LegalHoldStatus::Expired as i32)
+            .bind(hold.id)
             .execute(&self.pool)
             .await?;
 
             // Check if entry has other active legal holds
-            let active_holds = sqlx::query!(
-                "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2",
-                hold.entry_id,
-                LegalHoldStatus::Active as _
+            let active_holds = sqlx::query(
+                "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2"
             )
+            .bind(hold.entry_id)
+            .bind(LegalHoldStatus::Active as i32)
             .fetch_one(&self.pool)
             .await?;
 
             // If no active holds, remove legal hold flag from entry
             if active_holds.count.unwrap_or(0) == 0 {
-                sqlx::query!(
-                    "UPDATE repo_entry SET legal_hold = false WHERE id = $1",
-                    hold.entry_id
+                sqlx::query(
+                    "UPDATE repo_entry SET legal_hold = false WHERE id = $1"
                 )
+                .bind(hold.entry_id)
                 .execute(&self.pool)
                 .await?;
             }
@@ -212,10 +211,10 @@ impl ComplianceJobProcessor {
             .ok_or_else(|| anyhow::anyhow!("Missing export_id in metadata"))?;
 
         // Get export details
-        let export = sqlx::query!(
-            "SELECT export_type, filters, created_by FROM compliance_export WHERE id = $1",
-            export_id
+        let export = sqlx::query(
+            "SELECT export_type, filters, created_by FROM compliance_export WHERE id = $1"
         )
+        .bind(export_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Export not found"))?;
@@ -230,12 +229,12 @@ impl ComplianceJobProcessor {
         };
 
         // Update export with file path
-        sqlx::query!(
-            "UPDATE compliance_export SET file_path = $1, status = $2 WHERE id = $3",
-            file_path,
-            "completed",
-            export_id
+        sqlx::query(
+            "UPDATE compliance_export SET file_path = $1, status = $2 WHERE id = $3"
         )
+        .bind(file_path)
+        .bind("completed")
+        .bind(export_id)
         .execute(&self.pool)
         .await?;
 
@@ -316,10 +315,10 @@ impl ComplianceJobProcessor {
         // Delete audit logs older than 7 years
         let cutoff_date = Utc::now() - chrono::Duration::days(2555);
         
-        let result = sqlx::query!(
-            "DELETE FROM audit_log WHERE created_at < $1",
-            cutoff_date
+        let result = sqlx::query(
+            "DELETE FROM audit_log WHERE created_at < $1"
         )
+        .bind(cutoff_date)
         .execute(&self.pool)
         .await?;
 
@@ -360,13 +359,12 @@ impl ComplianceJobProcessor {
         job_type: ComplianceJobType,
         metadata: serde_json::Value,
     ) -> Result<ComplianceJob> {
-        let job = sqlx::query_as!(
-            ComplianceJob,
-            "INSERT INTO compliance_job (job_type, status, metadata) VALUES ($1, $2, $3) RETURNING id, job_type, status, created_at, started_at, completed_at, error_message, metadata",
-            job_type as _,
-            ComplianceJobStatus::Pending as _,
-            metadata
+        let job = sqlx::query_as::<_, ComplianceJob>(
+            "INSERT INTO compliance_job (job_type, status, metadata) VALUES ($1, $2, $3) RETURNING id, job_type, status, created_at, started_at, completed_at, error_message, metadata"
         )
+        .bind(job_type as i32)
+        .bind(ComplianceJobStatus::Pending as i32)
+        .bind(metadata)
         .fetch_one(&self.pool)
         .await?;
 
@@ -376,11 +374,10 @@ impl ComplianceJobProcessor {
 
     /// Get job status
     pub async fn get_job_status(&self, job_id: Uuid) -> Result<Option<ComplianceJob>> {
-        let job = sqlx::query_as!(
-            ComplianceJob,
-            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata FROM compliance_job WHERE id = $1",
-            job_id
+        let job = sqlx::query_as::<_, ComplianceJob>(
+            "SELECT id, job_type, status, created_at, started_at, completed_at, error_message, metadata FROM compliance_job WHERE id = $1"
         )
+        .bind(job_id)
         .fetch_optional(&self.pool)
         .await?;
 

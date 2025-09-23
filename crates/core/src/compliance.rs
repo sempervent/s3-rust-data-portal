@@ -92,16 +92,15 @@ impl ComplianceService {
         retention_days: i32,
         legal_hold_override: bool,
     ) -> Result<RetentionPolicy> {
-        let policy = sqlx::query_as!(
-            RetentionPolicy,
-            "INSERT INTO retention_policy (name, description, retention_days, legal_hold_override) 
+        let policy = sqlx::query_as::<_, RetentionPolicy>(
+            "INSERT INTO retention_policy (name, description, retention_days, legal_hold_override)
              VALUES ($1, $2, $3, $4) 
-             RETURNING id, name, description, retention_days, legal_hold_override, created_at, updated_at",
-            name,
-            description,
-            retention_days,
-            legal_hold_override
+             RETURNING id, name, description, retention_days, legal_hold_override, created_at, updated_at"
         )
+        .bind(name)
+        .bind(description)
+        .bind(retention_days)
+        .bind(legal_hold_override)
         .fetch_one(&self.pool)
         .await?;
 
@@ -115,11 +114,11 @@ impl ComplianceService {
         entry_id: Uuid,
         policy_id: Uuid,
     ) -> Result<()> {
-        sqlx::query!(
-            "UPDATE repo_entry SET retention_policy_id = $1, retention_until = NOW() + INTERVAL '1 day' * (SELECT retention_days FROM retention_policy WHERE id = $1) WHERE id = $2",
-            policy_id,
-            entry_id
+        sqlx::query(
+            "UPDATE repo_entry SET retention_policy_id = $1, retention_until = NOW() + INTERVAL '1 day' * (SELECT retention_days FROM retention_policy WHERE id = $1) WHERE id = $2"
         )
+        .bind(policy_id)
+        .bind(entry_id)
         .execute(&self.pool)
         .await?;
 
@@ -135,25 +134,24 @@ impl ComplianceService {
         created_by: Uuid,
         expires_at: Option<DateTime<Utc>>,
     ) -> Result<LegalHold> {
-        let legal_hold = sqlx::query_as!(
-            LegalHold,
-            "INSERT INTO legal_hold (entry_id, reason, created_by, expires_at, status) 
+        let legal_hold = sqlx::query_as::<_, LegalHold>(
+            "INSERT INTO legal_hold (entry_id, reason, created_by, expires_at, status)
              VALUES ($1, $2, $3, $4, $5) 
-             RETURNING id, entry_id, reason, created_by, created_at, expires_at, status",
-            entry_id,
-            reason,
-            created_by,
-            expires_at,
-            LegalHoldStatus::Active as _
+             RETURNING id, entry_id, reason, created_by, created_at, expires_at, status"
         )
+        .bind(entry_id)
+        .bind(reason)
+        .bind(created_by)
+        .bind(expires_at)
+        .bind(LegalHoldStatus::Active as i32)
         .fetch_one(&self.pool)
         .await?;
 
         // Mark entry as under legal hold
-        sqlx::query!(
-            "UPDATE repo_entry SET legal_hold = true WHERE id = $1",
-            entry_id
+        sqlx::query(
+            "UPDATE repo_entry SET legal_hold = true WHERE id = $1"
         )
+        .bind(entry_id)
         .execute(&self.pool)
         .await?;
 
@@ -167,11 +165,10 @@ impl ComplianceService {
         legal_hold_id: Uuid,
         released_by: Uuid,
     ) -> Result<()> {
-        let legal_hold = sqlx::query_as!(
-            LegalHold,
-            "SELECT id, entry_id, reason, created_by, created_at, expires_at, status FROM legal_hold WHERE id = $1",
-            legal_hold_id
+        let legal_hold = sqlx::query_as::<_, LegalHold>(
+            "SELECT id, entry_id, reason, created_by, created_at, expires_at, status FROM legal_hold WHERE id = $1"
         )
+        .bind(legal_hold_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Legal hold not found"))?;
@@ -181,29 +178,29 @@ impl ComplianceService {
         }
 
         // Update legal hold status
-        sqlx::query!(
-            "UPDATE legal_hold SET status = $1 WHERE id = $2",
-            LegalHoldStatus::Released as _,
-            legal_hold_id
+        sqlx::query(
+            "UPDATE legal_hold SET status = $1 WHERE id = $2"
         )
+        .bind(LegalHoldStatus::Released as i32)
+        .bind(legal_hold_id)
         .execute(&self.pool)
         .await?;
 
         // Check if entry has other active legal holds
-        let active_holds = sqlx::query!(
-            "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2",
-            legal_hold.entry_id,
-            LegalHoldStatus::Active as _
+        let active_holds = sqlx::query(
+            "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2"
         )
+        .bind(legal_hold.entry_id)
+        .bind(LegalHoldStatus::Active as i32)
         .fetch_one(&self.pool)
         .await?;
 
         // If no active holds, remove legal hold flag from entry
         if active_holds.count.unwrap_or(0) == 0 {
-            sqlx::query!(
-                "UPDATE repo_entry SET legal_hold = false WHERE id = $1",
-                legal_hold.entry_id
+            sqlx::query(
+                "UPDATE repo_entry SET legal_hold = false WHERE id = $1"
             )
+            .bind(legal_hold.entry_id)
             .execute(&self.pool)
             .await?;
         }
@@ -214,10 +211,10 @@ impl ComplianceService {
 
     /// Check if an entry can be deleted (not under legal hold and retention not expired)
     pub async fn can_delete_entry(&self, entry_id: Uuid) -> Result<bool> {
-        let entry = sqlx::query!(
-            "SELECT legal_hold, retention_until FROM repo_entry WHERE id = $1",
-            entry_id
+        let entry = sqlx::query(
+            "SELECT legal_hold, retention_until FROM repo_entry WHERE id = $1"
         )
+        .bind(entry_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Entry not found"))?;
@@ -248,17 +245,17 @@ impl ComplianceService {
         ip_address: Option<&str>,
         user_agent: Option<&str>,
     ) -> Result<()> {
-        sqlx::query!(
-            "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details, ip_address, user_agent) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            user_id,
-            action,
-            resource_type,
-            resource_id,
-            details,
-            ip_address,
-            user_agent
+        sqlx::query(
+            "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)"
         )
+        .bind(user_id)
+        .bind(action)
+        .bind(resource_type)
+        .bind(resource_id)
+        .bind(details)
+        .bind(ip_address)
+        .bind(user_agent)
         .execute(&self.pool)
         .await?;
 
@@ -324,7 +321,7 @@ impl ComplianceService {
             params.push(Box::new(offset));
         }
 
-        let logs = sqlx::query_as!(AuditLog, &query)
+        let logs = sqlx::query_as::<_, AuditLog>(&query)
             .fetch_all(&self.pool)
             .await?;
 
@@ -338,16 +335,15 @@ impl ComplianceService {
         filters: serde_json::Value,
         created_by: Uuid,
     ) -> Result<ComplianceExport> {
-        let export = sqlx::query_as!(
-            ComplianceExport,
+        let export = sqlx::query_as::<_, ComplianceExport>(
             "INSERT INTO compliance_export (export_type, filters, status, created_by) 
              VALUES ($1, $2, $3, $4) 
-             RETURNING id, export_type, filters, status, file_path, created_by, created_at, completed_at",
-            export_type as _,
-            filters,
-            ExportStatus::Pending as _,
-            created_by
+             RETURNING id, export_type, filters, status, file_path, created_by, created_at, completed_at"
         )
+        .bind(export_type as i32)
+        .bind(filters)
+        .bind(ExportStatus::Pending as i32)
+        .bind(created_by)
         .fetch_one(&self.pool)
         .await?;
 
@@ -357,7 +353,7 @@ impl ComplianceService {
 
     /// Get entries that are eligible for deletion (retention expired, no legal hold)
     pub async fn get_deletable_entries(&self) -> Result<Vec<Uuid>> {
-        let entries = sqlx::query!(
+        let entries = sqlx::query(
             "SELECT id FROM repo_entry 
              WHERE legal_hold = false 
              AND retention_until IS NOT NULL 
@@ -371,10 +367,10 @@ impl ComplianceService {
 
     /// Get entries under legal hold
     pub async fn get_legal_hold_entries(&self) -> Result<Vec<Uuid>> {
-        let entries = sqlx::query!(
-            "SELECT DISTINCT entry_id FROM legal_hold WHERE status = $1",
-            LegalHoldStatus::Active as _
+        let entries = sqlx::query(
+            "SELECT DISTINCT entry_id FROM legal_hold WHERE status = $1"
         )
+        .bind(LegalHoldStatus::Active as i32)
         .fetch_all(&self.pool)
         .await?;
 
@@ -383,7 +379,7 @@ impl ComplianceService {
 
     /// Get retention status summary
     pub async fn get_retention_status_summary(&self) -> Result<serde_json::Value> {
-        let stats = sqlx::query!(
+        let stats = sqlx::query(
             "SELECT 
                 COUNT(*) as total_entries,
                 COUNT(CASE WHEN legal_hold = true THEN 1 END) as legal_hold_entries,
