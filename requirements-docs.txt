@@ -1,0 +1,16 @@
+# MkDocs and Material Theme
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0
+
+# MkDocs Plugins
+mkdocs-mermaid2-plugin>=1.1.1
+mkdocs-git-revision-date-localized-plugin>=1.2.0
+mkdocs-openapi-plugin>=0.6.0
+
+# Python Markdown Extensions
+pymdown-extensions>=10.0.0
+markdown>=3.4.0
+
+# Additional Dependencies
+mkdocs-git-committers-plugin-2>=1.1.0
+mkdocs-git-authors-plugin>=0.7.0

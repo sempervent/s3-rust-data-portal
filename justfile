@@ -267,6 +267,30 @@ release version:
     git push origin v{{version}}
     docker buildx bake --push --set *.tags=ghcr.io/blacklake/blacklake:v{{version}} all
 
+# ===== DOCUMENTATION =====
+
+# Serve documentation locally
+docs-serve:
+    @echo "🚀 Starting BlackLake Documentation Server..."
+    ./docs-serve.sh
+
+# Build documentation
+docs-build:
+    @echo "📚 Building documentation..."
+    pip3 install -r requirements-docs.txt
+    mkdocs build --strict
+
+# Deploy documentation (for CI/CD)
+docs-deploy:
+    @echo "🚀 Deploying documentation..."
+    pip3 install -r requirements-docs.txt
+    mkdocs gh-deploy --force
+
+# Install documentation dependencies
+docs-install:
+    @echo "📦 Installing documentation dependencies..."
+    pip3 install -r requirements-docs.txt
+
 # ===== HELP =====
 
 # Show available commands
