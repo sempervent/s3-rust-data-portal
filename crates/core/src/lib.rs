@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
-use sophia::turtle::TurtleSerializer;
-use sophia::term::Term;
+use sophia::turtle::serializer::TurtleSerializer;
+use sophia::api::term::Term;
 use url::Url;
 
 // Re-export common types

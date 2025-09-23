@@ -300,9 +300,9 @@ pub struct WebhookPayload {
     pub data: serde_json::Value,
 }
 
-/// Webhook delivery record
+/// Webhook delivery record (extended version)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct WebhookDelivery {
+pub struct WebhookDeliveryExtended {
     pub id: Uuid,
     pub webhook_id: Uuid,
     pub event: WebhookEvent,
@@ -318,9 +318,9 @@ pub struct WebhookDelivery {
     pub updated_at: u64,
 }
 
-/// Dead letter webhook record
+/// Dead letter webhook record (extended version)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct WebhookDead {
+pub struct WebhookDeadExtended {
     pub id: Uuid,
     pub webhook_id: Uuid,
     pub event: WebhookEvent,

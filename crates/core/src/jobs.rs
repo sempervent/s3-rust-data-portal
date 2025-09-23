@@ -4,8 +4,8 @@
 use apalis_core::{
     context::JobContext,
     job::{Job, JobId},
-    request::JobRequest,
-    response::JobResponse,
+    request::Request,
+    response::Response,
     storage::Storage,
     worker::WorkerId,
 };

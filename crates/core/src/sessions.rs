@@ -214,11 +214,11 @@ impl SessionManager {
         })
     }
     
-    fn same_site_to_tower(&self) -> tower_sessions::SameSite {
+    fn same_site_to_tower(&self) -> tower_sessions::cookie::SameSite {
         match self.config.same_site {
-            SameSite::Strict => tower_sessions::SameSite::Strict,
-            SameSite::Lax => tower_sessions::SameSite::Lax,
-            SameSite::None => tower_sessions::SameSite::None,
+            SameSite::Strict => tower_sessions::cookie::SameSite::Strict,
+            SameSite::Lax => tower_sessions::cookie::SameSite::Lax,
+            SameSite::None => tower_sessions::cookie::SameSite::None,
         }
     }
 }
