@@ -69,7 +69,7 @@ sophia = "0.8"
 regex = "1"
 
 # Job system
-apalis = { version = "0.6", features = ["redis", "tokio"] }
+apalis = "0.6"
 apalis-redis = "0.6"
 apalis-core = "0.6"
 
