@@ -103,9 +103,9 @@ impl Connector for S3Connector {
                             title: key.split('/').last().unwrap_or(&key).to_string(),
                             description: None,
                             url: self.generate_presigned_url(&key, 3600).await?,
-                            content_type: object.content_type,
+                            content_type: None, // S3 Object doesn't have content_type field
                             size: object.size.map(|s| s as u64),
-                            modified_at: object.last_modified,
+                            modified_at: object.last_modified.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&chrono::Utc))),
                             tags: vec![],
                             metadata: {
                                 let mut meta = HashMap::new();
@@ -162,7 +162,7 @@ impl Connector for S3Connector {
                     url: self.generate_presigned_url(key, 3600).await?,
                     content_type: response.content_type,
                     size: response.content_length.map(|s| s as u64),
-                    modified_at: response.last_modified,
+                    modified_at: response.last_modified.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&chrono::Utc))),
                     tags: vec![],
                     metadata: {
                         let mut meta = HashMap::new();

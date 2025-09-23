@@ -94,41 +94,44 @@ impl PostgresConnector {
     
     /// Convert database row to ExternalEntry
     fn row_to_entry(&self, row: &Row, source_id: Uuid) -> Result<ExternalEntry, ConnectorError> {
-        let id = row.get::<_, String>(&self.config.id_column);
-        let title = row.get::<_, String>(&self.config.title_column);
+        let id = row.get::<_, String>(&self.config.id_column.as_str());
+        let title = row.get::<_, String>(&self.config.title_column.as_str());
         
         let description = if let Some(ref col) = self.config.description_column {
-            row.get::<_, Option<String>>(col)
+            row.get::<_, Option<String>>(col.as_str())
         } else {
             None
         };
         
         let url = if let Some(ref col) = self.config.url_column {
-            row.get::<_, Option<String>>(col)
+            row.get::<_, Option<String>>(col.as_str())
         } else {
             None
         }.unwrap_or_else(|| format!("postgres://{}/{}", self.config.database, id));
         
         let content_type = if let Some(ref col) = self.config.content_type_column {
-            row.get::<_, Option<String>>(col)
+            row.get::<_, Option<String>>(col.as_str())
         } else {
             None
         };
         
         let size = if let Some(ref col) = self.config.size_column {
-            row.get::<_, Option<i64>>(col).map(|s| s as u64)
+            row.get::<_, Option<i64>>(col.as_str()).map(|s| s as u64)
         } else {
             None
         };
         
         let modified_at = if let Some(ref col) = self.config.modified_at_column {
-            row.get::<_, Option<chrono::DateTime<chrono::Utc>>>(col)
+            // Parse timestamp as string and convert to DateTime
+            row.get::<_, Option<String>>(col.as_str())
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc))
         } else {
             None
         };
         
         let tags = if let Some(ref col) = self.config.tags_column {
-            row.get::<_, Option<Vec<String>>>(col).unwrap_or_default()
+            row.get::<_, Option<Vec<String>>>(col.as_str()).unwrap_or_default()
         } else {
             vec![]
         };
@@ -212,7 +215,7 @@ impl Connector for PostgresConnector {
         }
     }
     
-    async fn get_presigned_url(&self, entry: &ExternalEntry) -> Result<String, ConnectorError> {
+    async fn get_presigned_url(&self, entry: &ExternalEntry, _expires_in_seconds: u32) -> Result<String, ConnectorError> {
         // For Postgres, return the URL from the entry
         Ok(entry.url.clone())
     }

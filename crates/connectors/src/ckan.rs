@@ -210,6 +210,7 @@ impl Connector for CkanConnector {
         
         // Fetch details for each package
         for package_name in package_names {
+            let package_name_clone = package_name.clone();
             let mut params = HashMap::new();
             params.insert("id".to_string(), package_name);
             
@@ -219,7 +220,7 @@ impl Connector for CkanConnector {
                     all_entries.extend(entries);
                 }
                 Err(e) => {
-                    tracing::warn!("Failed to fetch package {}: {}", package_name, e);
+                    tracing::warn!("Failed to fetch package {}: {}", package_name_clone, e);
                 }
             }
         }
@@ -255,7 +256,7 @@ impl Connector for CkanConnector {
         Ok(None)
     }
     
-    async fn get_presigned_url(&self, entry: &ExternalEntry) -> Result<String, ConnectorError> {
+    async fn get_presigned_url(&self, entry: &ExternalEntry, _expires_in_seconds: u32) -> Result<String, ConnectorError> {
         // For CKAN, return the URL from the entry
         Ok(entry.url.clone())
     }

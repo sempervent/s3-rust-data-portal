@@ -2,7 +2,9 @@
 // Week 8: Federation across data sources
 
 use super::traits::*;
-use super::{S3Connector, PostgresConnector, CkanConnector};
+use super::s3::S3Connector;
+use super::postgres::PostgresConnector;
+use super::ckan::CkanConnector;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
