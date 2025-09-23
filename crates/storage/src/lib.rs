@@ -1,10 +1,9 @@
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::{
     config::{Builder as ConfigBuilder, Credentials, Region},
-    presigning::{PresigningConfig, PresigningRequest},
-    Client as S3Client, Endpoint, Operation,
+    presigning::PresigningConfig,
+    Client as S3Client,
 };
-use aws_smithy_http::endpoint::Endpoint as SmithyEndpoint;
 use std::time::Duration;
 use thiserror::Error;
 use url::Url;
@@ -19,6 +18,20 @@ pub enum StorageError {
     InvalidUrl(#[from] url::ParseError),
     #[error("Configuration error: {0}")]
     ConfigError(String),
+    #[error("AWS SDK error: {0}")]
+    AwsSdkError(String),
+}
+
+impl From<aws_smithy_runtime_api::client::result::SdkError<aws_sdk_s3::operation::put_object::PutObjectError, aws_smithy_runtime_api::http::response::Response>> for StorageError {
+    fn from(err: aws_smithy_runtime_api::client::result::SdkError<aws_sdk_s3::operation::put_object::PutObjectError, aws_smithy_runtime_api::http::response::Response>) -> Self {
+        StorageError::AwsSdkError(err.to_string())
+    }
+}
+
+impl From<aws_smithy_runtime_api::client::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError, aws_smithy_runtime_api::http::response::Response>> for StorageError {
+    fn from(err: aws_smithy_runtime_api::client::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError, aws_smithy_runtime_api::http::response::Response>) -> Self {
+        StorageError::AwsSdkError(err.to_string())
+    }
 }
 
 pub type Result<T> = std::result::Result<T, StorageError>;
@@ -93,7 +106,7 @@ impl StorageClient {
             .key(key)
             .content_length(size as i64)
             .content_type(content_type)
-            .presigned(presigning_config)
+            .into_presigned(&presigning_config)
             .await?;
 
         Ok(Url::parse(&request.uri().to_string())?)
@@ -144,7 +157,7 @@ impl StorageClient {
             .get_object()
             .bucket(&self.bucket)
             .key(key)
-            .presigned(presigning_config)
+            .into_presigned(&presigning_config)
             .await?;
 
         Ok(Url::parse(&request.uri().to_string())?)
