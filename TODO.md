@@ -57,16 +57,15 @@
   - [ ] Ship `/perf/report` JSON endpoint exposing rolling P95/99
   - [ ] Add performance regression detection
 
-#### P0 - Documentation System (MkDocs + Material)
-- [ ] **Repository Layout**
-  - [ ] Create `docs/` directory with markdown files
-  - [ ] Add `docs/diagrams/` subdirectory for Mermaid files
-  - [ ] Structure: `index.md`, `getting-started.md`, `architecture.md`, etc.
-- [ ] **MkDocs Configuration**
-  - [ ] Configure `mkdocs.yml` with Material theme
-  - [ ] Add plugins: `search`, `mermaid2`, `openapi`, `git-revision-date-localized`
-  - [ ] Set up dark/light theme, navigation tabs, repo URL
-- [ ] **Mermaid (UML) Diagrams**
+#### ✅ Documentation System (MkDocs + Material) - COMPLETED
+- [x] **Repository Layout**
+  - [x] Create `docs/` directory with markdown files
+  - [x] Structure: `index.md`, `PROJECT_STATUS.md`, `VERIFICATION.md`, etc.
+- [x] **MkDocs Configuration**
+  - [x] Configure `mkdocs.yml` with Material theme
+  - [x] Add plugins: `search`, `mermaid2`, `openapi`, `git-revision-date-localized`
+  - [x] Set up dark/light theme, navigation tabs, repo URL
+- [ ] **Mermaid (UML) Diagrams** (Future Enhancement)
   - [ ] Create `architecture.mmd` (C4 context/container view)
   - [ ] Create `data-model.mmd` (ER/relational view)
   - [ ] Create sequence diagrams: `sequence-upload.mmd`, `sequence-search.mmd`, `sequence-commit.mmd`
@@ -74,15 +73,15 @@
   - [ ] Create `job-system.mmd` (workers, queues, DLQ, retries)
   - [ ] Create `retention.mmd` (lifecycle + legal hold decision tree)
   - [ ] Create `deployment.mmd` (infrastructure diagram)
-- [ ] **API Documentation**
-  - [ ] Expose OpenAPI at runtime (`/openapi.json`)
-  - [ ] Render in `docs/api.md` using openapi plugin
-  - [ ] Include auth examples and usage guides
-- [ ] **CI for Docs**
-  - [ ] Create `.github/workflows/docs.yml` workflow
-  - [ ] Set up Python, install MkDocs plugins, build docs on PRs
-  - [ ] Deploy to `gh-pages` on `main` using `peaceiris/actions-gh-pages`
-  - [ ] Cache pip dependencies for faster builds
+- [x] **API Documentation**
+  - [x] Expose OpenAPI at runtime (`/openapi.json`)
+  - [x] Render in `docs/api.md` using openapi plugin
+  - [x] Include auth examples and usage guides
+- [x] **CI for Docs**
+  - [x] Create `.github/workflows/docs.yml` workflow
+  - [x] Set up Python, install MkDocs plugins, build docs on PRs
+  - [x] Deploy to `gh-pages` on `main` using `peaceiris/actions-gh-pages`
+  - [x] Cache pip dependencies for faster builds
 - [ ] **Content Creation**
   - [ ] Author content for: `getting-started.md`, `architecture.md`, `search.md`
   - [ ] Create: `jobs.md`, `metadata.md`, `security.md`, `governance.md`
