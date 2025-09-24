@@ -4,6 +4,8 @@ use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{info, error, warn};
 use crate::compliance_jobs::{ComplianceJobProcessor, ComplianceJobType};
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
 
 pub struct ComplianceWorker {
     pool: PgPool,
@@ -62,7 +64,7 @@ impl ComplianceWorker {
 
         let should_schedule_retention_check = match last_retention_check {
             Some(last_check) => {
-                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check).num_days();
+                let days_since_last_check = chrono::Utc::now().signed_duration_since(last_check.get::<DateTime<Utc>, _>("last_check")).num_days();
                 days_since_last_check >= 1
             }
             _ => true, // Never run before
@@ -144,11 +146,11 @@ impl ComplianceWorker {
         .await?;
 
         Ok(serde_json::json!({
-            "total_jobs": stats.get::<i64, _>("total_jobs").unwrap_or(0),
-            "pending_jobs": stats.get::<i64, _>("pending_jobs").unwrap_or(0),
-            "running_jobs": stats.get::<i64, _>("running_jobs").unwrap_or(0),
-            "completed_jobs": stats.get::<i64, _>("completed_jobs").unwrap_or(0),
-            "failed_jobs": stats.get::<i64, _>("failed_jobs").unwrap_or(0)
+            "total_jobs": match stats.get::<Option<i64>, _>("total_jobs") { Some(val) => val, None => 0 },
+            "pending_jobs": match stats.get::<Option<i64>, _>("pending_jobs") { Some(val) => val, None => 0 },
+            "running_jobs": match stats.get::<Option<i64>, _>("running_jobs") { Some(val) => val, None => 0 },
+            "completed_jobs": match stats.get::<Option<i64>, _>("completed_jobs") { Some(val) => val, None => 0 },
+            "failed_jobs": match stats.get::<Option<i64>, _>("failed_jobs") { Some(val) => val, None => 0 }
         }))
     }
 

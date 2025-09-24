@@ -199,7 +199,7 @@ impl ComplianceJobProcessor {
                 "UPDATE legal_hold SET status = $1 WHERE id = $2"
             )
             .bind(LegalHoldStatus::Expired as i32)
-            .bind(hold.get("id"))
+            .bind(hold.get::<Uuid, _>("id"))
             .execute(&self.pool)
             .await?;
 
@@ -207,17 +207,18 @@ impl ComplianceJobProcessor {
             let active_holds = sqlx::query(
                 "SELECT COUNT(*) as count FROM legal_hold WHERE entry_id = $1 AND status = $2"
             )
-            .bind(hold.get("entry_id"))
+            .bind(hold.get::<Uuid, _>("entry_id"))
             .bind(LegalHoldStatus::Active as i32)
             .fetch_one(&self.pool)
             .await?;
 
             // If no active holds, remove legal hold flag from entry
-            if active_holds.get::<i64, _>("count").unwrap_or(0) == 0 {
+            let active_count: i64 = active_holds.get("count");
+            if active_count == 0 {
                 sqlx::query(
                     "UPDATE repo_entry SET legal_hold = false WHERE id = $1"
                 )
-                .bind(hold.get("entry_id"))
+                .bind(hold.get::<Uuid, _>("entry_id"))
                 .execute(&self.pool)
                 .await?;
             }
@@ -229,7 +230,7 @@ impl ComplianceJobProcessor {
                 "legal_hold",
                 hold.get("id"),
                 serde_json::json!({
-                    "entry_id": hold.get("entry_id"),
+                    "entry_id": hold.get::<Uuid, _>("entry_id"),
                     "action": "expired"
                 }),
                 None,
@@ -273,7 +274,7 @@ impl ComplianceJobProcessor {
         sqlx::query(
             "UPDATE compliance_export SET file_path = $1, status = $2 WHERE id = $3"
         )
-        .bind(file_path)
+        .bind(&file_path)
         .bind("completed")
         .bind(export_id)
         .execute(&self.pool)

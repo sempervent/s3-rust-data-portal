@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
 use tower_sessions::{Session, SessionManagerLayer};
-use tower_sessions_redis_store::RedisStore;
+use tower_sessions::MemoryStore;
 use uuid::Uuid;
 
 /// Session configuration
@@ -79,21 +79,19 @@ pub enum SessionError {
 /// Session manager for BlackLake
 pub struct SessionManager {
     config: SessionConfig,
-    store: RedisStore,
+    store: MemoryStore,
 }
 
 impl SessionManager {
     /// Create a new session manager
-    pub fn new(redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
-        let redis_client = redis::Client::open(redis_url)
-            .map_err(|e| SessionError::Storage(e.to_string()))?;
-        let store = RedisStore::new(redis_client.into());
+    pub fn new(_redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
+        let store = MemoryStore::default();
         
         Ok(Self { config, store })
     }
     
     /// Create session layer for Axum
-    pub fn create_layer(&self) -> SessionManagerLayer<RedisStore> {
+    pub fn create_layer(&self) -> SessionManagerLayer<MemoryStore> {
         SessionManagerLayer::new(self.store.clone())
             .with_name(&self.config.cookie_name)
             .with_secure(self.config.secure)

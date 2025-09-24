@@ -12,8 +12,10 @@ use blacklake_core::{
     UploadInitResponse, canonical_to_dc_jsonld, canonical_to_turtle, validate_repo_name,
     normalize_path, validate_meta, validate_content_type, validate_file_size,
     SchemaRegistry, create_dublin_core_schema, deep_merge, get_metadata_changes,
-    SolrClient, SessionManager, JobContext, run_all_workers,
 };
+use blacklake_core::search::SolrClient;
+use blacklake_core::sessions::SessionManager;
+use blacklake_core::jobs::{JobContext, run_all_workers};
 use blacklake_index::{IndexClient, IndexError};
 use blacklake_storage::{StorageClient, StorageError};
 use chrono::{Duration, Utc};

@@ -4,7 +4,7 @@
 -- Branch protection rules
 CREATE TABLE protected_refs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     ref_name TEXT NOT NULL,
     require_admin BOOLEAN NOT NULL DEFAULT false,
     allow_fast_forward BOOLEAN NOT NULL DEFAULT true,
@@ -20,7 +20,7 @@ CREATE TABLE protected_refs (
 -- Repository quotas
 CREATE TABLE repo_quota (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     bytes_soft BIGINT NOT NULL DEFAULT 1073741824, -- 1GB
     bytes_hard BIGINT NOT NULL DEFAULT 10737418240, -- 10GB
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -31,7 +31,7 @@ CREATE TABLE repo_quota (
 -- Repository usage tracking
 CREATE TABLE repo_usage (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     current_bytes BIGINT NOT NULL DEFAULT 0,
     last_calculated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(repo_id)
@@ -40,7 +40,7 @@ CREATE TABLE repo_usage (
 -- Retention policies
 CREATE TABLE repo_retention (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     retention_policy JSONB NOT NULL DEFAULT '{"tombstone_days": 30, "hard_delete_days": 90, "legal_hold": false}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -50,7 +50,7 @@ CREATE TABLE repo_retention (
 -- Webhooks
 CREATE TABLE webhooks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     url TEXT NOT NULL,
     secret TEXT NOT NULL,
     events JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -88,7 +88,7 @@ CREATE TABLE webhook_dead (
 -- Export jobs
 CREATE TABLE export_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL,
     manifest JSONB NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed')),
@@ -102,9 +102,9 @@ CREATE TABLE export_jobs (
 -- Check results for branch protection
 CREATE TABLE check_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id UUID NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+    repo_id UUID NOT NULL REFERENCES repo(id) ON DELETE CASCADE,
     ref_name TEXT NOT NULL,
-    commit_id UUID NOT NULL REFERENCES commits(id) ON DELETE CASCADE,
+    commit_id UUID NOT NULL REFERENCES commit(id) ON DELETE CASCADE,
     check_name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failure', 'error')),
     details_url TEXT,
@@ -146,15 +146,15 @@ CREATE TRIGGER update_check_results_updated_at BEFORE UPDATE ON check_results FO
 
 -- Initialize default quotas for existing repos
 INSERT INTO repo_quota (repo_id, bytes_soft, bytes_hard)
-SELECT id, 1073741824, 10737418240 FROM repos
+SELECT id, 1073741824, 10737418240 FROM repo
 ON CONFLICT (repo_id) DO NOTHING;
 
 -- Initialize default usage tracking for existing repos
 INSERT INTO repo_usage (repo_id, current_bytes)
-SELECT id, 0 FROM repos
+SELECT id, 0 FROM repo
 ON CONFLICT (repo_id) DO NOTHING;
 
 -- Initialize default retention policies for existing repos
 INSERT INTO repo_retention (repo_id, retention_policy)
-SELECT id, '{"tombstone_days": 30, "hard_delete_days": 90, "legal_hold": false}'::jsonb FROM repos
+SELECT id, '{"tombstone_days": 30, "hard_delete_days": 90, "legal_hold": false}'::jsonb FROM repo
 ON CONFLICT (repo_id) DO NOTHING;

@@ -197,6 +197,17 @@ pub enum CheckStatus {
     Error,
 }
 
+impl std::fmt::Display for CheckStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CheckStatus::Pending => write!(f, "pending"),
+            CheckStatus::Success => write!(f, "success"),
+            CheckStatus::Failure => write!(f, "failure"),
+            CheckStatus::Error => write!(f, "error"),
+        }
+    }
+}
+
 /// Check result
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CheckResult {

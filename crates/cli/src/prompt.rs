@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct MetadataTemplate {
     pub name: String,
     pub defaults: HashMap<String, Value>,
@@ -44,7 +44,7 @@ pub fn collect_metadata_interactive(ctx: &PromptContext) -> Result<CanonicalMeta
     let license = prompt_license()?;
 
     Ok(CanonicalMeta {
-        creation_dt: creation_dt.to_rfc3339(),
+        creation_dt: creation_dt,
         creator,
         file_name,
         file_type,
@@ -67,7 +67,6 @@ fn prompt_creation_dt() -> Result<DateTime<Utc>> {
     let input: String = Input::new()
         .with_prompt("Creation date/time")
         .with_initial_text(&default)
-        .with_help_text("Format: YYYY-MM-DD HH:MM:SS (default: now)")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -96,7 +95,6 @@ fn prompt_creator(user_email: &Option<String>) -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Creator")
         .with_initial_text(&default)
-        .with_help_text("Email address or identifier of the creator")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -116,7 +114,6 @@ fn prompt_file_name(file_path: &str) -> Result<String> {
     let input: String = Input::new()
         .with_prompt("File name")
         .with_initial_text(&default)
-        .with_help_text("Name of the file")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -132,7 +129,6 @@ fn prompt_file_type(mime_type: &Option<String>) -> Result<String> {
     let input: String = Input::new()
         .with_prompt("File type (MIME)")
         .with_initial_text(&default)
-        .with_help_text("MIME type of the file")
         .interact_text()?;
 
     Ok(input.trim().to_string())
@@ -141,7 +137,6 @@ fn prompt_file_type(mime_type: &Option<String>) -> Result<String> {
 fn prompt_org_lab() -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Organization/Lab")
-        .with_help_text("Organization or laboratory name")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -154,7 +149,6 @@ fn prompt_org_lab() -> Result<String> {
 fn prompt_description() -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Description")
-        .with_help_text("Description of the file content")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -167,7 +161,6 @@ fn prompt_description() -> Result<String> {
 fn prompt_data_source() -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Data source")
-        .with_help_text("Source of the data (e.g., sensor, simulation, manual)")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -180,7 +173,6 @@ fn prompt_data_source() -> Result<String> {
 fn prompt_data_collection_method() -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Data collection method")
-        .with_help_text("Method used to collect the data")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -194,7 +186,6 @@ fn prompt_version() -> Result<String> {
     let input: String = Input::new()
         .with_prompt("Version")
         .with_initial_text("1.0")
-        .with_help_text("Version of the data")
         .interact_text()?;
 
     Ok(input.trim().to_string())
@@ -212,7 +203,6 @@ fn prompt_notes() -> Result<Option<String>> {
 
     let input: String = Input::new()
         .with_prompt("Notes")
-        .with_help_text("Additional notes about the file")
         .interact_text()?;
 
     Ok(if input.trim().is_empty() { None } else { Some(input.trim().to_string()) })
@@ -230,7 +220,6 @@ fn prompt_tags() -> Result<Option<Vec<String>>> {
 
     let input: String = Input::new()
         .with_prompt("Tags (comma-separated)")
-        .with_help_text("Tags for categorizing the file")
         .interact_text()?;
 
     if input.trim().is_empty() {
@@ -258,7 +247,6 @@ fn prompt_license() -> Result<Option<String>> {
 
     let input: String = Input::new()
         .with_prompt("License")
-        .with_help_text("License for the data")
         .interact_text()?;
 
     Ok(if input.trim().is_empty() { None } else { Some(input.trim().to_string()) })

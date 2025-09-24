@@ -9,9 +9,11 @@ use axum::{
     Router,
 };
 use blacklake_core::{
-    ApiError, ApiResponse, AuthContext, Webhook, WebhookDelivery, WebhookDead,
-    WebhookEvent, WebhookPayload, Uuid,
+    AuthContext, Uuid,
 };
+use blacklake_core::governance::{Webhook, WebhookDelivery, WebhookDead,
+    WebhookEvent, WebhookPayload};
+use crate::{ApiError, ApiResponse};
 use blacklake_index::IndexClient;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;

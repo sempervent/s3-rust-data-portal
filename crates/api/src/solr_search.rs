@@ -9,8 +9,10 @@ use axum::{
     Router,
 };
 use blacklake_core::{
-    AuthContext, ApiError, ApiResponse, SolrClient, SearchQuery, SearchResponse, SolrStatus,
+    AuthContext, SearchRequest, SearchResponse,
 };
+use blacklake_core::search::{SolrClient, SolrStatus};
+use crate::{ApiError, ApiResponse};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

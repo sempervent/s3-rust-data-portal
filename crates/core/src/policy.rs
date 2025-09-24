@@ -2,7 +2,9 @@
 // Week 7: Attribute-based access control with multi-tenant support
 
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use std::collections::HashMap;
+use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -12,6 +14,18 @@ use uuid::Uuid;
 pub enum PolicyEffect {
     Allow,
     Deny,
+}
+
+impl FromStr for PolicyEffect {
+    type Err = ();
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "allow" => Ok(PolicyEffect::Allow),
+            "deny" => Ok(PolicyEffect::Deny),
+            _ => Err(()),
+        }
+    }
 }
 
 /// Policy condition operators
@@ -51,6 +65,22 @@ pub struct Policy {
     pub actions: Vec<String>,
     pub resources: Vec<String>,
     pub condition: Option<PolicyCondition>,
+}
+
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for Policy {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        use sqlx::Row;
+        Ok(Policy {
+            id: row.get("id"),
+            tenant_id: row.get("tenant_id"),
+            name: row.get("name"),
+            effect: PolicyEffect::from_str(&row.get::<String, _>("effect")).unwrap_or(PolicyEffect::Deny),
+            actions: serde_json::from_str(&row.get::<String, _>("actions")).unwrap_or_default(),
+            resources: serde_json::from_str(&row.get::<String, _>("resources")).unwrap_or_default(),
+            condition: row.get::<Option<String>, _>("condition")
+                .and_then(|s| serde_json::from_str(&s).ok()),
+        })
+    }
 }
 
 /// Subject attributes for policy evaluation
@@ -110,16 +140,15 @@ impl PolicyEvaluator {
 
     /// Load policies for a tenant
     pub async fn load_policies(&mut self, tenant_id: Uuid, db_pool: &sqlx::PgPool) -> Result<(), PolicyError> {
-        let policies = sqlx::query_as!(
-            Policy,
+        let policies = sqlx::query_as::<_, Policy>(
             r#"
             SELECT id, tenant_id, name, effect, actions, resources, condition
             FROM policies
             WHERE tenant_id = $1
             ORDER BY created_at ASC
-            "#,
-            tenant_id
+            "#
         )
+        .bind(tenant_id)
         .fetch_all(db_pool)
         .await?;
 
@@ -129,21 +158,21 @@ impl PolicyEvaluator {
 
     /// Load subject attributes
     pub async fn load_subject_attributes(&mut self, subject: &str, db_pool: &sqlx::PgPool) -> Result<(), PolicyError> {
-        let attributes = sqlx::query!(
+        let attributes = sqlx::query(
             r#"
             SELECT key, value
             FROM subject_attributes
             WHERE subject = $1
-            "#,
-            subject
+            "#
         )
+        .bind(subject)
         .fetch_all(db_pool)
         .await?;
 
         let mut attr_map = HashMap::new();
         for attr in attributes {
-            let value: serde_json::Value = serde_json::from_str(&attr.value)?;
-            attr_map.insert(attr.key, value);
+            let value: serde_json::Value = serde_json::from_str(&attr.get::<String, _>("value"))?;
+            attr_map.insert(attr.get::<String, _>("key"), value);
         }
 
         self.subject_attributes.insert(

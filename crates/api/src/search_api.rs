@@ -9,9 +9,10 @@ use axum::{
     Router,
 };
 use blacklake_core::{
-    ApiError, ApiResponse, AuthContext, SearchQuery, SearchResponse, SearchProvider,
-    SearchBackend, SearchBackendFactory, SearchConfig, SearchHealth, SearchMetrics,
+    AuthContext, SearchRequest, SearchResponse,
 };
+use blacklake_core::search::{SearchProvider, SearchBackend, SearchBackendFactory, SearchConfig, SearchHealth, SearchMetrics};
+use crate::{ApiError, ApiResponse};
 use blacklake_index::IndexClient;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};

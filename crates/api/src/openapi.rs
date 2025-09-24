@@ -7,7 +7,7 @@ use axum::{
     routing::get,
     Router,
 };
-use blacklake_core::ApiResponse;
+use crate::ApiResponse;
 use serde_json::Value;
 use crate::AppState;
 

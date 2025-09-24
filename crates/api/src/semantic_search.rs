@@ -9,9 +9,10 @@ use axum::{
     Router,
 };
 use blacklake_core::{
-    AuthContext, ApiError, ApiResponse,
-    embeddings::{EmbeddingService, MockEmbeddingService, SemanticSearchRequest, SemanticSearchResponse, EmbeddingRequest, EmbeddingResponse, SuggestedTags},
+    AuthContext,
 };
+use blacklake_core::embeddings::{EmbeddingService, MockEmbeddingService, SemanticSearchRequest, SemanticSearchResponse, EmbeddingRequest, EmbeddingResponse, SuggestedTags};
+use crate::{ApiError, ApiResponse};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

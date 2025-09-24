@@ -49,3 +49,12 @@ tower_governor = "0.1"
 
 # Lazy static for metrics
 lazy_static = "1.4"
+
+# Missing dependencies for API crate
+sqlx = { workspace = true }
+tower-sessions = { workspace = true }
+tower-sessions-redis-store = { workspace = true }
+tower-sessions-memory-store = { workspace = true }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"

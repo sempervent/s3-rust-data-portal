@@ -9,8 +9,9 @@ use axum::{
     Router,
 };
 use blacklake_core::{
-    AuthContext, ApiError, ApiResponse,
+    AuthContext,
 };
+use crate::{ApiError, ApiResponse};
 use blacklake_connectors::{
     ConnectorConfig, ConnectorType, ConnectorStatus, SyncResult,
     ConnectorRegistry, ConnectorManager,

@@ -290,7 +290,7 @@ impl ComplianceService {
         .await?;
 
         // If no active holds, remove legal hold flag from entry
-        if active_holds.count.unwrap_or(0) == 0 {
+        if match active_holds.get::<Option<i64>, _>("count") { Some(val) => val, None => 0 } == 0 {
             sqlx::query(
                 "UPDATE repo_entry SET legal_hold = false WHERE id = $1"
             )
@@ -314,12 +314,12 @@ impl ComplianceService {
         .ok_or_else(|| anyhow::anyhow!("Entry not found"))?;
 
         // Cannot delete if under legal hold
-        if entry.legal_hold {
+        if entry.get::<bool, _>("legal_hold") {
             return Ok(false);
         }
 
         // Cannot delete if retention period not expired
-        if let Some(retention_until) = entry.retention_until {
+        if let Some(retention_until) = entry.get::<Option<DateTime<Utc>>, _>("retention_until") {
             if retention_until > Utc::now() {
                 return Ok(false);
             }
@@ -484,11 +484,16 @@ impl ComplianceService {
         .fetch_one(&self.pool)
         .await?;
 
+        let total_entries: i64 = stats.get("total_entries");
+        let legal_hold_entries: i64 = stats.get("legal_hold_entries");
+        let expired_retention: i64 = stats.get("expired_retention");
+        let active_retention: i64 = stats.get("active_retention");
+
         Ok(serde_json::json!({
-            "total_entries": stats.get::<i64, _>("total_entries").unwrap_or(0),
-            "legal_hold_entries": stats.get::<i64, _>("legal_hold_entries").unwrap_or(0),
-            "expired_retention": stats.get::<i64, _>("expired_retention").unwrap_or(0),
-            "active_retention": stats.get::<i64, _>("active_retention").unwrap_or(0)
+            "total_entries": total_entries,
+            "legal_hold_entries": legal_hold_entries,
+            "expired_retention": expired_retention,
+            "active_retention": active_retention,
         }))
     }
 }

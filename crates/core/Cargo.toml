@@ -29,6 +29,7 @@ rand = { workspace = true }
 base64 = "0.21"
 reqwest = { workspace = true }
 tracing = "0.1"
+tracing-subscriber = "0.3"
 tokio = { version = "1.0", features = ["full"] }
 opentelemetry = { version = "0.21", features = ["metrics"] }
 opentelemetry_sdk = { version = "0.21", features = ["metrics", "rt-tokio"] }

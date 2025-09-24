@@ -45,7 +45,7 @@ impl ApiClient {
         &self.base_url
     }
 
-    fn request(&self) -> reqwest::RequestBuilder {
+    pub fn request(&self) -> reqwest::RequestBuilder {
         let mut req = self.client.get(&self.base_url);
         
         if let Some(ref token) = self.token {
@@ -55,7 +55,7 @@ impl ApiClient {
         req
     }
 
-    fn post_request(&self, url: &str) -> reqwest::RequestBuilder {
+    pub fn post_request(&self, url: &str) -> reqwest::RequestBuilder {
         let mut req = self.client.post(url);
         
         if let Some(ref token) = self.token {
@@ -139,8 +139,8 @@ impl ApiClient {
             url.push_str(&format!("?path={}", urlencoding::encode(path)));
         }
 
-        let response = self.request()
-            .url(&url)
+        let response = self.client
+            .get(&url)
             .send()
             .await?;
 
@@ -157,25 +157,11 @@ impl ApiClient {
         let mut url = format!("{}/v1/repos/{}/search", self.base_url, repo);
         
         let mut query_params = Vec::new();
-        if let Some(ref query) = request.query {
-            query_params.push(format!("q={}", urlencoding::encode(query)));
-        }
-        if let Some(ref file_type) = request.file_type {
-            query_params.push(format!("file_type={}", urlencoding::encode(file_type)));
-        }
-        if let Some(ref org_lab) = request.org_lab {
-            query_params.push(format!("org_lab={}", urlencoding::encode(org_lab)));
-        }
-        if let Some(ref tags) = request.tags {
-            for tag in tags {
-                query_params.push(format!("tag={}", urlencoding::encode(tag)));
+        // Add filters to query params
+        for (key, value) in &request.filters {
+            if let Some(value_str) = value.as_str() {
+                query_params.push(format!("{}={}", key, urlencoding::encode(value_str)));
             }
-        }
-        if let Some(ref created_after) = request.created_after {
-            query_params.push(format!("created_after={}", urlencoding::encode(created_after)));
-        }
-        if let Some(ref created_before) = request.created_before {
-            query_params.push(format!("created_before={}", urlencoding::encode(created_before)));
         }
         if let Some(limit) = request.limit {
             query_params.push(format!("limit={}", limit));
@@ -189,8 +175,8 @@ impl ApiClient {
             url.push_str(&query_params.join("&"));
         }
 
-        let response = self.request()
-            .url(&url)
+        let response = self.client
+            .get(&url)
             .send()
             .await?;
 
@@ -207,8 +193,8 @@ impl ApiClient {
         let url = format!("{}/v1/repos/{}/blob/{}/{}", 
             self.base_url, repo, r#ref, urlencoding::encode(path));
         
-        let response = self.request()
-            .url(&url)
+        let response = self.client
+            .get(&url)
             .send()
             .await?;
 
@@ -229,8 +215,8 @@ impl ApiClient {
         let url = format!("{}/v1/repos/{}/rdf/{}/{}?format={}", 
             self.base_url, repo, r#ref, urlencoding::encode(path), format);
         
-        let response = self.request()
-            .url(&url)
+        let response = self.client
+            .get(&url)
             .send()
             .await?;
 
@@ -250,8 +236,8 @@ impl ApiClient {
             format!("{}/v1/schemas/default", self.base_url)
         };
 
-        let response = self.request()
-            .url(&url)
+        let response = self.client
+            .get(&url)
             .send()
             .await?;
 

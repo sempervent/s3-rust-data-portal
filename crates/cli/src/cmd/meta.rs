@@ -77,8 +77,9 @@ pub async fn meta_edit_command(args: MetaEditArgs, api_client: &ApiClient) -> Re
 
     // Create metadata-only commit
     let commit_request = CommitRequest {
-        ref: args.r#ref.clone(),
-        message: format!("Update metadata for {}", args.path),
+        r#ref: args.r#ref.clone(),
+        message: Some(format!("Update metadata for {}", args.path)),
+        expected_parent: None,
         changes: vec![Change {
             op: ChangeOp::Meta,
             path: args.path,
@@ -90,7 +91,7 @@ pub async fn meta_edit_command(args: MetaEditArgs, api_client: &ApiClient) -> Re
     println!("💾 Committing metadata changes...");
     let commit_response = api_client.commit(&args.repo, &commit_request, true).await?;
 
-    println!("✅ Successfully updated metadata: {}", commit_response.commit_id);
+    println!("✅ Successfully updated metadata: {:?}", commit_response.commit_id);
     Ok(())
 }
 
@@ -103,11 +104,11 @@ async fn get_current_metadata(args: &MetaEditArgs, api_client: &ApiClient) -> Re
         .ok_or_else(|| anyhow!("File not found: {}", args.path))?;
 
     // Parse existing metadata or create default
-    let metadata = if let Some(ref meta) = entry.meta {
-        serde_json::from_value(meta.clone())?
+    let metadata = if entry.meta.is_object() {
+        serde_json::from_value(entry.meta.clone())?
     } else {
         CanonicalMeta {
-            creation_dt: chrono::Utc::now().to_rfc3339(),
+            creation_dt: chrono::Utc::now(),
             creator: "unknown".to_string(),
             file_name: Path::new(&args.path)
                 .file_name()
@@ -115,7 +116,7 @@ async fn get_current_metadata(args: &MetaEditArgs, api_client: &ApiClient) -> Re
                 .unwrap_or("")
                 .to_string(),
             file_type: "application/octet-stream".to_string(),
-            file_size: entry.size as i64,
+            file_size: entry.size.unwrap_or(0),
             org_lab: "Unknown".to_string(),
             description: "No description".to_string(),
             data_source: "unknown".to_string(),
@@ -194,7 +195,11 @@ fn merge_metadata(metadata: &mut CanonicalMeta, meta_value: &Value) -> Result<()
 
 fn set_metadata_field(metadata: &mut CanonicalMeta, key: &str, value: &str) -> Result<()> {
     match key {
-        "creation_dt" => metadata.creation_dt = value.to_string(),
+        "creation_dt" => {
+            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&value) {
+                metadata.creation_dt = dt.with_timezone(&chrono::Utc);
+            }
+        },
         "creator" => metadata.creator = value.to_string(),
         "file_name" => metadata.file_name = value.to_string(),
         "file_type" => metadata.file_type = value.to_string(),
@@ -225,13 +230,24 @@ pub fn show_metadata_diff(old: &CanonicalMeta, new: &CanonicalMeta) {
             println!("{:-^1$}", "-", 80);
         }
         for op in group {
-            for change in diff.iter_inline_changes(op) {
+            for change in diff.iter_changes(op) {
                 let (sign, style) = match change.tag() {
                     ChangeTag::Delete => ("-", "red"),
                     ChangeTag::Insert => ("+", "green"),
                     ChangeTag::Equal => (" ", "white"),
                 };
-                print!("{}{}", style.apply_to(sign).bold(), style.apply_to(change));
+                let colored_sign = match style {
+                    "red" => colored::Colorize::red(sign),
+                    "green" => colored::Colorize::green(sign),
+                    _ => colored::Colorize::white(sign),
+                };
+                let change_str = change.to_string();
+                let colored_change = match style {
+                    "red" => colored::Colorize::red(&*change_str),
+                    "green" => colored::Colorize::green(&*change_str),
+                    _ => colored::Colorize::white(&*change_str),
+                };
+                print!("{}{}", colored_sign.bold(), colored_change);
             }
         }
     }

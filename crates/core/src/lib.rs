@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
-use schemars::JsonSchema;
 use sophia::api::graph::Graph;
 use sophia::api::serializer::Stringifier;
-use sophia::turtle::TurtleSerializer;
+// use sophia::turtle::TurtleSerializer; // Commented out due to import issues
 use sophia::api::term::Term;
 use url::Url;
 
@@ -27,6 +26,26 @@ impl From<Uuid> for UuidWrapper {
 impl From<UuidWrapper> for Uuid {
     fn from(wrapper: UuidWrapper) -> Self {
         wrapper.0
+    }
+}
+
+// SQLx trait implementations for UuidWrapper
+impl sqlx::Type<sqlx::Postgres> for UuidWrapper {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        <Uuid as sqlx::Type<sqlx::Postgres>>::type_info()
+    }
+}
+
+impl sqlx::Encode<'_, sqlx::Postgres> for UuidWrapper {
+    fn encode_by_ref(&self, buf: &mut <sqlx::Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer) -> sqlx::encode::IsNull {
+        self.0.encode_by_ref(buf)
+    }
+}
+
+impl sqlx::Decode<'_, sqlx::Postgres> for UuidWrapper {
+    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, sqlx::error::BoxDynError> {
+        let uuid = <Uuid as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+        Ok(UuidWrapper(uuid))
     }
 }
 pub use uuid::Uuid as CommitId;
@@ -88,11 +107,13 @@ pub struct Object {
 /// Tree entry
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Entry {
+    pub id: UuidWrapper,
     pub commit_id: UuidWrapper,
     pub path: String,
     pub object_sha256: Option<String>,
     pub meta: serde_json::Value,
     pub is_dir: bool,
+    pub created_at: DateTime<Utc>,
 }
 
 /// ACL entry
@@ -162,7 +183,7 @@ pub struct Change {
     pub meta: serde_json::Value,
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ChangeOp {
     Add,

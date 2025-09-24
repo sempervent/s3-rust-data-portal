@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install cargo-chef
+RUN cargo install cargo-chef
+
 # Copy recipe and build dependencies
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json

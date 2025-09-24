@@ -1,12 +1,17 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, CommandFactory};
 use reqwest::Client;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use uuid::Uuid;
 
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 mod api;
-mod cmd;
+mod cmd {
+    pub mod meta;
+    pub mod put;
+}
 mod prompt;
 
 use api::ApiClient;
@@ -210,16 +215,16 @@ enum RdfCommands {
     },
 }
 
-fn parse_key_value(s: &str) -> Result<(String, String), String> {
+fn parse_key_value(s: &str) -> Result<(String, String)> {
     let parts: Vec<&str> = s.splitn(2, '=').collect();
     if parts.len() != 2 {
-        return Err(format!("Invalid key=value format: {}", s));
+        return Err(format!("Invalid key=value format: {}", s).into());
     }
     Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     let cli = Cli::parse();
     
     // Set up logging
@@ -233,33 +238,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_token(cli.token.unwrap_or_default());
 
     match cli.command {
-        Commands::Put(args) => {
+        Commands::Put { repo, r#ref, local_file, path, r#type, emit_rdf, open_editor, meta, meta_key, template, dry_run, non_interactive } => {
             put::put_command(put::PutArgs {
-                repo: args.repo,
-                r#ref: args.r#ref,
-                local_file: args.local_file,
-                path: args.path,
-                r#type: args.r#type,
-                emit_rdf: args.emit_rdf,
-                open_editor: args.open_editor,
-                meta: args.meta,
-                meta_key: args.meta_key,
-                template: args.template,
-                dry_run: args.dry_run,
-                non_interactive: args.non_interactive,
+                repo,
+                r#ref,
+                local_file,
+                path,
+                r#type,
+                emit_rdf,
+                open_editor,
+                meta,
+                meta_key,
+                template,
+                dry_run,
+                non_interactive,
             }, &api_client).await?;
         },
         Commands::Meta { command } => {
             match command {
-                MetaCommands::Edit(args) => {
+                MetaCommands::Edit { repo, r#ref, path, open_editor, meta, meta_key, dry_run } => {
                     meta::meta_edit_command(meta::MetaEditArgs {
-                        repo: args.repo,
-                        r#ref: args.r#ref,
-                        path: args.path,
-                        open_editor: args.open_editor,
-                        meta: args.meta,
-                        meta_key: args.meta_key,
-                        dry_run: args.dry_run,
+                        repo,
+                        r#ref,
+                        path,
+                        open_editor,
+                        meta,
+                        meta_key,
+                        dry_run,
                     }, &api_client).await?;
                 },
             }
@@ -338,13 +343,33 @@ async fn search_command(
     json: bool,
     api_client: &ApiClient,
 ) -> Result<()> {
+    let mut filters = std::collections::HashMap::new();
+    if let Some(query) = q {
+        if !query.is_empty() {
+            filters.insert("query".to_string(), serde_json::Value::String(query));
+        }
+    }
+    if let Some(ft) = file_type {
+        filters.insert("file_type".to_string(), serde_json::Value::String(ft));
+    }
+    if let Some(ol) = org {
+        filters.insert("org_lab".to_string(), serde_json::Value::String(ol));
+    }
+    if !tag.is_empty() {
+        filters.insert("tags".to_string(), serde_json::Value::Array(
+            tag.into_iter().map(|t| serde_json::Value::String(t)).collect()
+        ));
+    }
+    if let Some(ca) = from {
+        filters.insert("created_after".to_string(), serde_json::Value::String(ca));
+    }
+    if let Some(cb) = created_before {
+        filters.insert("created_before".to_string(), serde_json::Value::String(cb));
+    }
+    
     let search_request = blacklake_core::SearchRequest {
-        query: q,
-        file_type,
-        org_lab: org,
-        tags: if tag.is_empty() { None } else { Some(tag) },
-        created_after: from,
-        created_before,
+        filters,
+        sort: None,
         limit,
         offset: None,
     };
@@ -372,34 +397,34 @@ async fn search_command(
                     "path" => a.path.cmp(&b.path),
                     "size" => a.size.cmp(&b.size),
                     "creation_dt" => {
-                        let a_dt = a.meta.as_ref()
-                            .and_then(|m| m.get("creation_dt"))
+                        let a_dt = a.meta
+                            .get("creation_dt")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let b_dt = b.meta.as_ref()
-                            .and_then(|m| m.get("creation_dt"))
+                        let b_dt = b.meta
+                            .get("creation_dt")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
                         a_dt.cmp(b_dt)
                     },
                     "file_type" => {
-                        let a_type = a.meta.as_ref()
-                            .and_then(|m| m.get("file_type"))
+                        let a_type = a.meta
+                            .get("file_type")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let b_type = b.meta.as_ref()
-                            .and_then(|m| m.get("file_type"))
+                        let b_type = b.meta
+                            .get("file_type")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
                         a_type.cmp(b_type)
                     },
                     "org_lab" => {
-                        let a_org = a.meta.as_ref()
-                            .and_then(|m| m.get("org_lab"))
+                        let a_org = a.meta
+                            .get("org_lab")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
-                        let b_org = b.meta.as_ref()
-                            .and_then(|m| m.get("org_lab"))
+                        let b_org = b.meta
+                            .get("org_lab")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
                         a_org.cmp(b_org)
@@ -413,38 +438,43 @@ async fn search_command(
             for field in &fields_to_show {
                 match field.as_str() {
                     "path" => println!("📄 {}", entry.path),
-                    "size" => println!("   Size: {} bytes", entry.size),
-                    "sha256" => println!("   SHA256: {}", entry.sha256),
+                    "size" => println!("   Size: {} bytes", entry.size.unwrap_or(0)),
+                    "sha256" => println!("   SHA256: {}", "N/A"), // SHA256 not available in SearchEntry
                     "description" => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(description) = meta.get("description").and_then(|v| v.as_str()) {
                                 println!("   Description: {}", description);
                             }
                         }
                     },
                     "org_lab" => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(org_lab) = meta.get("org_lab").and_then(|v| v.as_str()) {
                                 println!("   Organization: {}", org_lab);
                             }
                         }
                     },
                     "file_type" => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(file_type) = meta.get("file_type").and_then(|v| v.as_str()) {
                                 println!("   Type: {}", file_type);
                             }
                         }
                     },
                     "creation_dt" => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(creation_dt) = meta.get("creation_dt").and_then(|v| v.as_str()) {
                                 println!("   Created: {}", creation_dt);
                             }
                         }
                     },
                     "tags" => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(tags) = meta.get("tags").and_then(|v| v.as_array()) {
                                 let tag_strs: Vec<String> = tags.iter()
                                     .filter_map(|v| v.as_str())
@@ -457,7 +487,8 @@ async fn search_command(
                         }
                     },
                     _ => {
-                        if let Some(meta) = &entry.meta {
+                        {
+                            let meta = &entry.meta;
                             if let Some(value) = meta.get(field).and_then(|v| v.as_str()) {
                                 println!("   {}: {}", field, value);
                             }
@@ -475,7 +506,7 @@ async fn search_command(
 async fn create_repo_command(name: String, api_client: &ApiClient) -> Result<()> {
     println!("📁 Creating repository: {}", name);
     
-    let response = api_client.post_request(&format!("{}/v1/repos", api_client.base_url))
+    let response = api_client.post_request(&format!("{}/v1/repos", api_client.base_url()))
         .json(&json!({ "name": name }))
         .send()
         .await?;
@@ -493,8 +524,8 @@ async fn create_repo_command(name: String, api_client: &ApiClient) -> Result<()>
 async fn list_repos_command(api_client: &ApiClient) -> Result<()> {
     println!("📁 Repositories:");
     
-    let response = api_client.request()
-        .url(&format!("{}/v1/repos", api_client.base_url))
+    let response = reqwest::Client::new()
+        .get(&format!("{}/v1/repos", api_client.base_url()))
         .send()
         .await?;
     
@@ -516,7 +547,7 @@ async fn list_repos_command(api_client: &ApiClient) -> Result<()> {
 async fn set_repo_feature_command(repo: String, key: String, value: String, api_client: &ApiClient) -> Result<()> {
     println!("⚙️ Setting feature {}={} for repository {}", key, value, repo);
     
-    let response = api_client.post_request(&format!("{}/v1/repos/{}/features", api_client.base_url, repo))
+    let response = api_client.post_request(&format!("{}/v1/repos/{}/features", api_client.base_url(), repo))
         .json(&json!({ "key": key, "value": value }))
         .send()
         .await?;

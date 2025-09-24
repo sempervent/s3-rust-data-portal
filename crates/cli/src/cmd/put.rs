@@ -75,7 +75,7 @@ pub async fn put_command(args: PutArgs, api_client: &ApiClient) -> Result<()> {
     }
 
     let file_size = std::fs::metadata(local_file_path)?.len();
-    let mime_type = args.r#type.or_else(|| {
+    let mime_type = args.r#type.clone().or_else(|| {
         from_path(local_file_path).first().map(|m| m.to_string())
     });
 
@@ -120,11 +120,12 @@ pub async fn put_command(args: PutArgs, api_client: &ApiClient) -> Result<()> {
     }
 
     let commit_request = CommitRequest {
-        ref: args.r#ref,
-        message: format!("Add {}", args.path),
+        r#ref: args.r#ref.clone(),
+        message: Some(format!("Add {}", args.path)),
+        expected_parent: None,
         changes: vec![Change {
             op: ChangeOp::Add,
-            path: args.path,
+            path: args.path.clone(),
             sha256: Some(upload_init.sha256),
             meta: serde_json::to_value(&metadata)?,
         }],
@@ -133,7 +134,7 @@ pub async fn put_command(args: PutArgs, api_client: &ApiClient) -> Result<()> {
     println!("💾 Committing changes...");
     let commit_response = api_client.commit(&args.repo, &commit_request, true).await?;
 
-    println!("✅ Successfully committed: {}", commit_response.commit_id);
+    println!("✅ Successfully committed: {:?}", commit_response.commit_id);
     
     if args.emit_rdf {
         println!("🔗 RDF metadata available at: /v1/repos/{}/rdf/{}/{}", 
@@ -145,7 +146,7 @@ pub async fn put_command(args: PutArgs, api_client: &ApiClient) -> Result<()> {
 
 fn collect_metadata_non_interactive(args: &PutArgs) -> Result<CanonicalMeta> {
     let mut metadata = CanonicalMeta {
-        creation_dt: chrono::Utc::now().to_rfc3339(),
+        creation_dt: chrono::Utc::now(),
         creator: "cli-user".to_string(),
         file_name: Path::new(&args.path)
             .file_name()
@@ -203,7 +204,11 @@ fn merge_metadata(metadata: &mut CanonicalMeta, meta_value: &Value) -> Result<()
 
 fn set_metadata_field(metadata: &mut CanonicalMeta, key: &str, value: &str) -> Result<()> {
     match key {
-        "creation_dt" => metadata.creation_dt = value.to_string(),
+        "creation_dt" => {
+            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&value) {
+                metadata.creation_dt = dt.with_timezone(&chrono::Utc);
+            }
+        },
         "creator" => metadata.creator = value.to_string(),
         "file_name" => metadata.file_name = value.to_string(),
         "file_type" => metadata.file_type = value.to_string(),
@@ -250,13 +255,24 @@ pub fn show_metadata_diff(old: &CanonicalMeta, new: &CanonicalMeta) {
             println!("{:-^1$}", "-", 80);
         }
         for op in group {
-            for change in diff.iter_inline_changes(op) {
+            for change in diff.iter_changes(op) {
                 let (sign, style) = match change.tag() {
                     ChangeTag::Delete => ("-", "red"),
                     ChangeTag::Insert => ("+", "green"),
                     ChangeTag::Equal => (" ", "white"),
                 };
-                print!("{}{}", style.apply_to(sign).bold(), style.apply_to(change));
+                let colored_sign = match style {
+                    "red" => colored::Colorize::red(sign),
+                    "green" => colored::Colorize::green(sign),
+                    _ => colored::Colorize::white(sign),
+                };
+                let change_str = change.to_string();
+                let colored_change = match style {
+                    "red" => colored::Colorize::red(&*change_str),
+                    "green" => colored::Colorize::green(&*change_str),
+                    _ => colored::Colorize::white(&*change_str),
+                };
+                print!("{}{}", colored_sign.bold(), colored_change);
             }
         }
     }
