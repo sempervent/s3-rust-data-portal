@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for Blacklake API
-FROM rust:1.75-slim as builder
+FROM rustlang/rust:nightly as builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -14,12 +14,10 @@ WORKDIR /app
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ ./crates/
+COPY migrations/ ./migrations/
 
 # Build dependencies (cached layer)
 RUN cargo build --release --workspace --all-features
-
-# Copy source code
-COPY . .
 
 # Build the application
 RUN cargo build --release --workspace --all-features

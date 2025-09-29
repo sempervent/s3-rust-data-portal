@@ -1,4 +1,3 @@
-
 services:
   # ===== DATABASE MIGRATIONS =====
   migrations:
@@ -6,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.migrations
       target: runtime
+    profiles: ["migrations", "dev", "prod"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
       RUST_LOG: ${RUST_LOG:-info}
@@ -17,12 +17,9 @@ services:
       echo 'Waiting for database to be ready...' &&
       sleep 5 &&
       echo 'Running database migrations...' &&
-      /app/scripts/run-migrations.sh &&
+      sqlx migrate run &&
       echo 'Migrations completed successfully!'
       "
-    volumes:
-      - ./scripts:/app/scripts:ro
-      - ./migrations:/app/migrations:ro
     networks:
       - backplane
 
@@ -32,6 +29,7 @@ services:
       context: .
       dockerfile: Dockerfile.cli
       target: runtime
+    profiles: ["cli", "dev", "prod"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
       S3_ENDPOINT: http://minio:9000
@@ -47,26 +45,34 @@ services:
     stdin_open: true
     tty: true
     depends_on:
+      db:
+        condition: service_healthy
       migrations:
         condition: service_completed_successfully
     networks:
       - backplane
 
-  # ===== API SERVICE (Updated to depend on migrations) =====
-  api:
+  # ===== MIGRATION RUNNER (One-time) =====
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+      target: runtime
+    profiles: ["migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
+      RUST_LOG: ${RUST_LOG:-info}
     depends_on:
       db:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
-      minio:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      solr:
-        condition: service_healthy
+    command: >
+      bash -c "
+      echo 'Running database migrations...' &&
+      sqlx migrate run &&
+      echo 'Migrations completed successfully!'
+      "
+    networks:
+      - backplane
 
 networks:
   backplane:

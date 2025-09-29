@@ -1,0 +1,15 @@
+# Minimal zsh configuration for automation (bypasses Oh My Zsh)
+# This file sources only the essential parts of your .zshrc
+
+# Source your actual .zshrc but with automation-friendly settings
+export ZSH_DISABLE_COMPFIX=true
+export ZSH_THEME=robbyrussell
+export DISABLE_AUTO_UPDATE=true
+export DISABLE_UPDATE_PROMPT=true
+export DISABLE_MAGIC_FUNCTIONS=true
+export DISABLE_LS_COLORS=true
+export DISABLE_AUTO_TITLE=true
+export DISABLE_UNTRACKED_FILES_DIRTY=true
+
+# Source your actual .zshrc
+source ~/.zshrc

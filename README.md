@@ -45,6 +45,74 @@ Blacklake consists of six main crates:
 - Docker and Docker Compose
 - `just` command runner (optional, for dev commands)
 
+## Local Initialization
+
+The `blacklake init` command helps you initialize directories and files as BlackLake artifacts with comprehensive metadata templates.
+
+### Basic Usage
+
+```bash
+# Initialize a directory (top-level files only)
+blacklake init ./dataset \
+  --namespace org/projectA \
+  --label domain=air --label pii=false \
+  --meta source=field --meta instrument=ats6502
+
+# Initialize a single file with sidecar metadata
+blacklake init ./model.onnx \
+  --with-authorization \
+  --class internal \
+  --meta framework=onnx
+
+# Initialize recursively with depth control
+blacklake init ./dataset \
+  --recursive \
+  --max-depth 2 \
+  --include-hidden \
+  --follow-symlinks
+```
+
+### Advanced Configuration
+
+```bash
+# Override nested fields via dot notation
+blacklake init ./dataset \
+  --set policy.readers[0]=group:data-science \
+  --set auth.allowed_audiences[0]=urn:ml:prod \
+  --set user_metadata.calibration='{"date":"2025-09-01","operator":"mx-12"}'
+
+# Preview changes without writing files
+blacklake init ./dataset --dry-run
+
+# Overwrite existing metadata
+blacklake init ./dataset --overwrite
+```
+
+### Generated Files
+
+For directories, `blacklake init` creates:
+- `.bl/_artifact.metadata.yaml` - Directory-level manifest
+- `.bl/*.metadata.yaml` - Per-file metadata sidecars
+- `.bl/policy.yaml` - Access control policy (strict defaults)
+- `.bl/authorization.yaml` - Usage authorization (restrictive defaults)
+- `.bl/README.md` - Documentation
+- `.bl/.gitignore` - Git ignore rules
+- `.bl/provenance.yaml` - Lineage information
+
+For single files:
+- `<file>.bl.metadata.yaml` - File metadata sidecar
+- `<file>.bl.authorization.yaml` - Authorization template (if `--with-authorization`)
+
+### Security Defaults
+
+The init command creates strict security defaults:
+- **No readers or writers** by default
+- **Immutable** content with object locking
+- **No permitted uses** in authorization
+- **All actions prohibited** in policy bindings
+
+Modify the generated files to grant appropriate access for your use case.
+
 ### 1. Clone and Setup
 
 ```bash

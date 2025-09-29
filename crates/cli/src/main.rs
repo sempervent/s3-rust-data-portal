@@ -11,11 +11,12 @@ mod api;
 mod cmd {
     pub mod meta;
     pub mod put;
+    pub mod init;
 }
 mod prompt;
 
 use api::ApiClient;
-use cmd::{put, meta};
+use cmd::{put, meta, init};
 
 #[derive(Parser)]
 #[command(name = "blacklake")]
@@ -137,6 +138,56 @@ enum Commands {
     Rdf {
         #[command(subcommand)]
         command: RdfCommands,
+    },
+    /// Initialize a directory or file as a BlackLake artifact
+    Init {
+        /// Path to initialize (file or directory)
+        path: String,
+        /// Recursive directory traversal
+        #[arg(long)]
+        recursive: bool,
+        /// Maximum depth for recursive traversal
+        #[arg(long, default_value = "1")]
+        max_depth: u32,
+        /// Include hidden files
+        #[arg(long)]
+        include_hidden: bool,
+        /// Follow symlinks
+        #[arg(long)]
+        follow_symlinks: bool,
+        /// Namespace for the artifact
+        #[arg(long, default_value = "default")]
+        namespace: String,
+        /// Labels as key=value pairs
+        #[arg(long, value_parser = parse_key_value)]
+        label: Vec<(String, String)>,
+        /// User metadata as key=value pairs
+        #[arg(long, value_parser = parse_key_value)]
+        meta: Vec<(String, String)>,
+        /// Classification level
+        #[arg(long, default_value = "restricted")]
+        class: String,
+        /// Owner principal
+        #[arg(long)]
+        owner: Option<String>,
+        /// Skip hash computation
+        #[arg(long)]
+        no_hash: bool,
+        /// Hash algorithms to use
+        #[arg(long, default_value = "blake3,sha256")]
+        hash: String,
+        /// Set metadata using dot notation
+        #[arg(long, value_parser = parse_key_value)]
+        set: Vec<(String, String)>,
+        /// Overwrite existing metadata files
+        #[arg(long)]
+        overwrite: bool,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+        /// Include authorization template for files
+        #[arg(long)]
+        with_authorization: bool,
     },
     /// Generate shell completions
     Completions {
@@ -298,6 +349,43 @@ async fn main() -> Result<()> {
                     get_rdf_command(repo, r#ref, path, format, &api_client).await?;
                 },
             }
+        },
+        Commands::Init { 
+            path, 
+            recursive, 
+            max_depth, 
+            include_hidden, 
+            follow_symlinks, 
+            namespace, 
+            label, 
+            meta, 
+            class, 
+            owner, 
+            no_hash, 
+            hash, 
+            set, 
+            overwrite, 
+            dry_run, 
+            with_authorization 
+        } => {
+            init::init_command(init::InitArgs {
+                path,
+                recursive,
+                max_depth,
+                include_hidden,
+                follow_symlinks,
+                namespace,
+                label,
+                meta,
+                class,
+                owner,
+                no_hash,
+                hash,
+                set,
+                overwrite,
+                dry_run,
+                with_authorization,
+            }).await?;
         },
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();

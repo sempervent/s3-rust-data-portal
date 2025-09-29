@@ -13,6 +13,23 @@ use url::Url;
 // Re-export common types
 pub use uuid::Uuid as RepoId;
 
+// Sort order enum
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum SortOrder {
+    Asc,
+    Desc,
+}
+
+// Search query struct
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SearchQuery {
+    pub query: String,
+    pub filters: HashMap<String, serde_json::Value>,
+    pub sort: Option<String>,
+    pub limit: Option<u32>,
+    pub offset: Option<u32>,
+}
+
 // Custom JsonSchema implementation for UUID via wrapper
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct UuidWrapper(#[schemars(with = "String")] pub Uuid);

@@ -1,0 +1,184 @@
+services:
+  # ===== CORE DATABASE =====
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blacklake}
+      POSTGRES_USER: ${POSTGRES_USER:-blacklake}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blacklake}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blacklake} -d ${POSTGRES_DB:-blacklake}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== OBJECT STORAGE =====
+  minio:
+    image: minio/minio:latest
+    platform: linux/amd64
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ===== REDIS =====
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ===== KEYCLOAK =====
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    platform: linux/amd64
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-blacklake}
+      KC_DB_USERNAME: ${POSTGRES_USER:-blacklake}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-blacklake}
+    command: start-dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===== SOLR =====
+  solr:
+    image: solr:9.3
+    platform: linux/amd64
+    environment:
+      SOLR_HEAP: 512m
+    ports:
+      - "8983:8983"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/admin/info/system"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===== BLACKLAKE API =====
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-blacklake}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      REDIS_URL: redis://redis:6379
+      SOLR_URL: http://solr:8983
+      OIDC_ISSUER: http://keycloak:8080/realms/master
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-blacklake}
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===== BLACKLAKE UI (Development) =====
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+      VITE_OIDC_ISSUER: http://localhost:8081/realms/master
+      VITE_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-blacklake}
+      VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ===== BLACKLAKE CLI =====
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.cli
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-blacklake}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      API_BASE_URL: http://api:8080
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      - ./data:/data
+    working_dir: /data
+    stdin_open: true
+    tty: true
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  # ===== MIGRATIONS =====
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blacklake}:${POSTGRES_PASSWORD:-blacklake}@db:5432/${POSTGRES_DB:-blacklake}
+      RUST_LOG: ${RUST_LOG:-info}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      bash -c "
+      echo 'Running database migrations...' &&
+      sqlx migrate run &&
+      echo 'Migrations completed successfully!'
+      "
+
+volumes:
+  postgres_data:
+  minio_data:

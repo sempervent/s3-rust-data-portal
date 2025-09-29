@@ -32,8 +32,8 @@ aws-config = "1.1"
 aws-sdk-s3 = "1.0"
 
 # Authentication
-jsonwebtoken = "9.2"
-openidconnect = "3.0"
+jsonwebtoken = "8.2"
+openidconnect = "4.0"
 
 # Utilities
 uuid = { version = "1.0", features = ["v4", "serde"] }
@@ -76,7 +76,10 @@ apalis-core = "0.6"
 # Sessions
 tower-sessions = "0.7"
 tower-sessions-redis-store = "0.7"
+tower-sessions-memory-store = "0.7"
 
 # Cryptography
 rand = "0.8"
 hmac = "0.12"
+hex = "0.4"
+

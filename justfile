@@ -1,5 +1,8 @@
 # BlackLake Developer Commands
 
+# Set environment variables for all commands (DATABASE_URL for SQLx macros)
+set DATABASE_URL := "postgresql://blacklake:blacklake@localhost:5432/blacklake"
+
 # ===== BUILD COMMANDS =====
 
 # Build all Rust crates
@@ -66,13 +69,25 @@ up-prod:
 up-profiles profiles:
     docker compose --profile {{profiles}} up -d --wait
 
+# Start simple stack (no profiles)
+up-simple:
+    docker compose -f docker-compose.simple.yml up -d
+
 # Stop all services
 down:
     docker compose down
 
+# Stop simple stack
+down-simple:
+    docker compose -f docker-compose.simple.yml down
+
 # Stop and remove volumes
 down-clean:
     docker compose down -v
+
+# Stop simple stack and remove volumes
+down-simple-clean:
+    docker compose -f docker-compose.simple.yml down -v
 
 # View logs
 logs service:
@@ -84,9 +99,17 @@ logs-all:
 
 # ===== DATABASE COMMANDS =====
 
-# Run database migrations
+# Run database migrations (automatic with proper ordering)
 migrate:
-    docker compose exec api sqlx migrate run
+    @echo "🗄️  Running database migrations..."
+    docker compose -f docker-compose.simple.yml run --rm migrations
+    @echo "✅ Migrations completed!"
+
+# Run migrations manually with custom script
+migrate-manual:
+    @echo "🗄️  Running migrations manually..."
+    docker compose -f docker-compose.simple.yml run --rm migrations /app/scripts/run-migrations.sh
+    @echo "✅ Manual migrations completed!"
 
 # Create new migration
 migrate-create name:
@@ -99,6 +122,11 @@ migrate-rollback:
 # Prepare SQLx offline data
 sqlx-prepare:
     cargo sqlx prepare --workspace
+
+# Check database schema
+db-schema:
+    @echo "📊 Checking database schema..."
+    docker compose exec db psql -U blacklake -d blacklake -c "\dt"
 
 # ===== TESTING COMMANDS =====
 
@@ -124,16 +152,45 @@ scan:
     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/workspace aquasec/trivy image blacklake-api:local
     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/workspace aquasec/trivy image blacklake-ui:local
 
+# ===== CLI COMMANDS =====
+
+# Start BlackLake CLI service
+cli:
+    @echo "🖥️  Starting BlackLake CLI..."
+    docker compose -f docker-compose.simple.yml up cli
+
+# Run CLI command
+cli-run command:
+    @echo "🖥️  Running CLI command: {{command}}"
+    docker compose -f docker-compose.simple.yml run --rm cli blacklake {{command}}
+
+# Open CLI shell
+cli-shell:
+    @echo "🖥️  Opening CLI shell..."
+    docker compose -f docker-compose.simple.yml run --rm cli bash
+
+# List repositories via CLI
+cli-repos:
+    @echo "📁 Listing repositories..."
+    docker compose -f docker-compose.simple.yml run --rm cli blacklake repos list
+
+# Search via CLI
+cli-search query:
+    @echo "🔍 Searching for: {{query}}"
+    docker compose -f docker-compose.simple.yml run --rm cli blacklake search --query "{{query}}"
+
 # ===== DEVELOPMENT COMMANDS =====
 
-# Start development environment
+# Start development environment (with migrations)
 dev:
+    @echo "🚀 Starting development environment with migrations..."
     docker compose --profile dev up -d --wait
-    echo "Development environment ready!"
-    echo "API: http://localhost:8080"
-    echo "UI: http://localhost:3000"
-    echo "MinIO: http://localhost:9001"
-    echo "Keycloak: http://localhost:8081"
+    @echo "✅ Development environment ready!"
+    @echo "🌐 API: http://localhost:8080"
+    @echo "🌐 UI: http://localhost:3000"
+    @echo "🌐 MinIO: http://localhost:9001"
+    @echo "🌐 Keycloak: http://localhost:8081"
+    @echo "🖥️  CLI: just cli"
 
 # Start with hot reload
 dev-watch:
@@ -200,9 +257,30 @@ setup-all:
     @echo "🚀 Building all images and starting development stack..."
     docker buildx bake local
     docker compose --profile dev up -d --wait
-    @echo "✅ Setup complete! API available at http://localhost:8080"
-    @echo "📊 Grafana available at http://localhost:3000 (admin/admin)"
-    @echo "🔍 Solr available at http://localhost:8983"
+    @echo "✅ Setup complete! Migrations run automatically."
+    @echo "🌐 API: http://localhost:8080"
+    @echo "🌐 UI: http://localhost:3000"
+    @echo "🌐 MinIO: http://localhost:9001"
+    @echo "🌐 Keycloak: http://localhost:8081"
+
+# Step-by-step setup (recommended)
+setup-step-by-step:
+    @echo "🚀 Step 1: Building all images..."
+    ./build-images.sh
+    @echo "🚀 Step 2: Starting database and dependencies..."
+    docker compose -f docker-compose.simple.yml up -d db minio redis keycloak solr
+    @echo "⏳ Waiting for database to be ready..."
+    sleep 10
+    @echo "🚀 Step 3: Running migrations..."
+    docker compose -f docker-compose.simple.yml run --rm migrations
+    @echo "🚀 Step 4: Starting API and UI..."
+    docker compose -f docker-compose.simple.yml up -d api ui
+    @echo "✅ Setup complete!"
+    @echo "🌐 API: http://localhost:8080"
+    @echo "🌐 UI: http://localhost:5173"
+    @echo "🌐 MinIO: http://localhost:9001"
+    @echo "🌐 Keycloak: http://localhost:8081"
+    @echo "🖥️  CLI: just cli"
 
 # Quick development setup (core services only)
 setup-dev:
@@ -290,6 +368,40 @@ docs-deploy:
 docs-install:
     @echo "📦 Installing documentation dependencies..."
     pip3 install -r requirements-docs.txt
+
+# ===== INIT COMMANDS =====
+
+# Initialize a directory as BlackLake artifact
+init-dir path:
+    @echo "📁 Initializing directory: {{path}}"
+    cargo run -p blacklake-cli -- init {{path}} --namespace default --label domain=demo
+
+# Initialize a single file as BlackLake artifact
+init-file file:
+    @echo "📄 Initializing file: {{file}}"
+    cargo run -p blacklake-cli -- init {{file}} --class restricted
+
+# Initialize with custom settings
+init-custom path namespace labels class:
+    @echo "🔧 Initializing with custom settings: {{path}}"
+    cargo run -p blacklake-cli -- init {{path}} \
+        --namespace {{namespace}} \
+        --label domain=air --label pii=false \
+        --class {{class}} \
+        --meta source=field --meta instrument=ats6502
+
+# Initialize with dot notation overrides
+init-override path:
+    @echo "⚙️  Initializing with dot notation overrides: {{path}}"
+    cargo run -p blacklake-cli -- init {{path}} \
+        --set policy.readers[0]=group:data-science \
+        --set auth.allowed_audiences[0]=urn:ml:prod \
+        --set user_metadata.calibration='{"date":"2025-09-01","operator":"mx-12"}'
+
+# Dry run initialization
+init-dry-run path:
+    @echo "🔍 Dry run initialization: {{path}}"
+    cargo run -p blacklake-cli -- init {{path}} --dry-run
 
 # ===== HELP =====
 

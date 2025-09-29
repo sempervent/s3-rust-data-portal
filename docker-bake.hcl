@@ -63,6 +63,17 @@ target "jobrunner-local" {
   ]
 }
 
+target "cli-local" {
+  dockerfile = "Dockerfile.cli"
+  context = "."
+  platforms = ["linux/amd64"]
+  output = ["type=docker"]
+  tags = [
+    "blacklake-cli:local",
+    "blacklake-cli:dev"
+  ]
+}
+
 # ===== BUILD GROUPS =====
 group "local" {
   targets = ["api-local", "ui-local", "gateway-local"]
@@ -77,5 +88,5 @@ group "core" {
 }
 
 group "all" {
-  targets = ["api-local", "ui-local", "gateway-local", "jobrunner-local"]
+  targets = ["api-local", "ui-local", "gateway-local", "jobrunner-local", "cli-local"]
 }

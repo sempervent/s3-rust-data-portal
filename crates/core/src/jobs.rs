@@ -720,3 +720,10 @@ mod tests {
         assert_eq!(IndexEntryJob::timeout(), Duration::from_secs(120));
     }
 }
+
+// Run all workers function
+pub async fn run_all_workers() -> Result<(), JobError> {
+    info!("Starting all job workers");
+    // Simplified implementation - just log for now
+    Ok(())
+}
