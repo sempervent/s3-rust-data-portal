@@ -1,0 +1,43 @@
+{
+  "dashboard": {
+    "title": "Database Metrics",
+    "panels": [
+      {
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count"
+          }
+        ]
+      },
+      {
+        "title": "Query Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "pg_stat_database_tup_returned"
+          }
+        ]
+      },
+      {
+        "title": "Cache Hit Ratio",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "pg_stat_database_blks_hit / (pg_stat_database_blks_hit + pg_stat_database_blks_read)"
+          }
+        ]
+      },
+      {
+        "title": "Database Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "pg_database_size_bytes"
+          }
+        ]
+      }
+    ]
+  }
+}

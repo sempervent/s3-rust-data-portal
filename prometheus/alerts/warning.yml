@@ -1,0 +1,38 @@
+groups:
+- name: warning
+  rules:
+  - alert: HighCPUUsage
+    expr: cpu_usage_percent > 80
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage"
+      description: "CPU usage is above 80% on {{ $labels.instance }}"
+
+  - alert: HighDiskUsage
+    expr: disk_usage_percent > 85
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High disk usage"
+      description: "Disk usage is above 85% on {{ $labels.instance }}"
+
+  - alert: SlowResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Slow response time"
+      description: "95th percentile response time is above 1s for {{ $labels.job }}"
+
+  - alert: LowCacheHitRatio
+    expr: (pg_stat_database_blks_hit / (pg_stat_database_blks_hit + pg_stat_database_blks_read)) < 0.8
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low cache hit ratio"
+      description: "Database cache hit ratio is below 80%"

@@ -1,0 +1,99 @@
+graph TB
+    subgraph "Job Queue System"
+        QUEUE[Redis Queue]
+        DLQ[Dead Letter Queue]
+        RETRY[Retry Queue]
+    end
+
+    subgraph "Job Types"
+        METADATA[Metadata Extraction]
+        RDF[RDF Generation]
+        EXPORT[Export Jobs]
+        REINDEX[Reindex Jobs]
+        CLEANUP[Cleanup Jobs]
+        WEBHOOK[Webhook Delivery]
+    end
+
+    subgraph "Job Processing"
+        WORKER1[Worker 1]
+        WORKER2[Worker 2]
+        WORKER3[Worker N]
+    end
+
+    subgraph "Job States"
+        PENDING[Pending]
+        RUNNING[Running]
+        COMPLETED[Completed]
+        FAILED[Failed]
+        RETRYING[Retrying]
+        CANCELLED[Cancelled]
+    end
+
+    subgraph "Retry Logic"
+        MAX_RETRIES[Max Retries: 3]
+        BACKOFF[Exponential Backoff]
+        TIMEOUT[Job Timeout: 30min]
+    end
+
+    subgraph "Monitoring"
+        METRICS[Job Metrics]
+        ALERTS[Failure Alerts]
+        DASHBOARD[Job Dashboard]
+    end
+
+    %% Job flow
+    METADATA --> QUEUE
+    RDF --> QUEUE
+    EXPORT --> QUEUE
+    REINDEX --> QUEUE
+    CLEANUP --> QUEUE
+    WEBHOOK --> QUEUE
+
+    QUEUE --> WORKER1
+    QUEUE --> WORKER2
+    QUEUE --> WORKER3
+
+    WORKER1 --> PENDING
+    WORKER2 --> PENDING
+    WORKER3 --> PENDING
+
+    PENDING --> RUNNING
+    RUNNING --> COMPLETED
+    RUNNING --> FAILED
+
+    FAILED --> RETRY
+    RETRY --> RUNNING
+    RETRY --> DLQ
+
+    %% Retry logic
+    FAILED --> MAX_RETRIES
+    MAX_RETRIES --> BACKOFF
+    BACKOFF --> TIMEOUT
+    TIMEOUT --> DLQ
+
+    %% Monitoring
+    WORKER1 --> METRICS
+    WORKER2 --> METRICS
+    WORKER3 --> METRICS
+    FAILED --> ALERTS
+    METRICS --> DASHBOARD
+
+    %% Job processing details
+    WORKER1 --> |"Process Job"| METADATA
+    WORKER2 --> |"Process Job"| RDF
+    WORKER3 --> |"Process Job"| EXPORT
+
+    %% Styling
+    classDef queueClass fill:#e3f2fd
+    classDef jobClass fill:#f3e5f5
+    classDef workerClass fill:#e8f5e8
+    classDef stateClass fill:#fff3e0
+    classDef retryClass fill:#ffebee
+    classDef monitorClass fill:#f1f8e9
+
+    class QUEUE,DLQ,RETRY queueClass
+    class METADATA,RDF,EXPORT,REINDEX,CLEANUP,WEBHOOK jobClass
+    class WORKER1,WORKER2,WORKER3 workerClass
+    class PENDING,RUNNING,COMPLETED,FAILED,RETRYING,CANCELLED stateClass
+    class MAX_RETRIES,BACKOFF,TIMEOUT retryClass
+    class METRICS,ALERTS,DASHBOARD monitorClass

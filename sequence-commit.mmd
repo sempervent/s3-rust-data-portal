@@ -1,0 +1,57 @@
+sequenceDiagram
+    participant U as User
+    participant CLI as CLI Tool
+    participant API as API Server
+    participant AUTH as Auth Service
+    participant DB as Database
+    participant S3 as S3 Storage
+    participant JOB as Job Processor
+    participant SOLR as Solr Index
+    participant WEBHOOK as Webhook Service
+
+    U->>CLI: blacklake commit -m "Add new model"
+    CLI->>API: POST /api/v1/repos/{id}/commits
+    
+    API->>AUTH: Validate API key
+    AUTH-->>API: Key valid
+    
+    API->>DB: Check repository permissions
+    DB-->>API: Write permission granted
+    
+    API->>DB: Create commit record
+    DB-->>API: Commit created
+    
+    API->>S3: Store commit metadata
+    S3-->>API: Metadata stored
+    
+    API->>JOB: Queue commit processing job
+    JOB-->>API: Job queued
+    
+    API-->>CLI: Commit successful
+    CLI-->>U: Commit created
+    
+    Note over JOB,SOLR: Background processing
+    JOB->>DB: Get commit details
+    DB-->>JOB: Commit data
+    
+    JOB->>S3: Process changed files
+    S3-->>JOB: File data
+    
+    JOB->>JOB: Calculate diffs
+    JOB->>JOB: Update lineage
+    
+    JOB->>DB: Update repository state
+    DB-->>JOB: State updated
+    
+    JOB->>SOLR: Update search index
+    SOLR-->>JOB: Index updated
+    
+    JOB->>WEBHOOK: Trigger webhook events
+    WEBHOOK->>WEBHOOK: Send notifications
+    
+    JOB->>JOB: Mark job as completed
+    
+    Note over U,WEBHOOK: Webhook delivery
+    WEBHOOK->>WEBHOOK: Deliver commit event
+    WEBHOOK->>WEBHOOK: Retry on failure
+    WEBHOOK->>WEBHOOK: Log delivery status

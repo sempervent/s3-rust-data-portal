@@ -1,0 +1,177 @@
+erDiagram
+    REPOSITORY {
+        uuid id PK
+        string name UK
+        string description
+        string owner_id
+        timestamp created_at
+        timestamp updated_at
+        jsonb metadata
+        string status
+    }
+
+    ENTRY {
+        uuid id PK
+        uuid repo_id FK
+        string path
+        string file_type
+        bigint file_size
+        string checksum
+        timestamp created_at
+        timestamp updated_at
+        jsonb metadata
+        string status
+    }
+
+    USER {
+        string id PK
+        string email UK
+        string name
+        string role
+        timestamp created_at
+        timestamp last_login
+        jsonb preferences
+        boolean active
+    }
+
+    PERMISSION {
+        uuid id PK
+        string user_id FK
+        uuid resource_id
+        string resource_type
+        string permission_type
+        string granted_by
+        timestamp granted_at
+        timestamp expires_at
+        string justification
+    }
+
+    JOB {
+        uuid id PK
+        string job_type
+        string status
+        jsonb payload
+        timestamp created_at
+        timestamp started_at
+        timestamp completed_at
+        string error_message
+        integer retry_count
+        integer max_retries
+    }
+
+    AUDIT_LOG {
+        uuid id PK
+        string user_id
+        string action
+        string resource_type
+        string resource_id
+        jsonb details
+        timestamp created_at
+        string ip_address
+        string user_agent
+    }
+
+    WEBHOOK {
+        uuid id PK
+        string url
+        string events
+        string secret
+        boolean active
+        timestamp created_at
+        timestamp updated_at
+        integer retry_count
+        integer max_retries
+    }
+
+    WEBHOOK_DELIVERY {
+        uuid id PK
+        uuid webhook_id FK
+        string event_type
+        jsonb payload
+        integer status_code
+        string response_body
+        timestamp created_at
+        timestamp delivered_at
+        string error_message
+    }
+
+    RETENTION_POLICY {
+        uuid id PK
+        string name
+        string description
+        integer retention_days
+        string conditions
+        boolean active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    LEGAL_HOLD {
+        uuid id PK
+        string name
+        string description
+        jsonb resources
+        string status
+        timestamp created_at
+        timestamp updated_at
+        timestamp expires_at
+    }
+
+    USAGE_EVENT {
+        uuid id PK
+        uuid repo_id FK
+        string user_id
+        string event_type
+        bigint size_bytes
+        integer duration_minutes
+        jsonb metadata
+        timestamp created_at
+    }
+
+    BUDGET_ALERT {
+        uuid id PK
+        uuid repo_id FK
+        float threshold_percentage
+        float current_usage_percentage
+        float budget_limit
+        float current_spend
+        string alert_type
+        string severity
+        timestamp created_at
+        timestamp resolved_at
+        boolean resolved
+    }
+
+    ACCESS_REVIEW {
+        uuid id PK
+        string review_period
+        string status
+        timestamp created_at
+        timestamp due_date
+        timestamp completed_at
+        jsonb reviewers
+        jsonb permissions
+        jsonb review_summary
+    }
+
+    SIGNED_URL_CONSTRAINT {
+        uuid id PK
+        uuid url_id
+        string constraint_type
+        jsonb configuration
+        timestamp created_at
+        timestamp expires_at
+        boolean active
+    }
+
+    %% Relationships
+    REPOSITORY ||--o{ ENTRY : contains
+    REPOSITORY ||--o{ PERMISSION : has
+    USER ||--o{ PERMISSION : granted_to
+    REPOSITORY ||--o{ USAGE_EVENT : tracks
+    REPOSITORY ||--o{ BUDGET_ALERT : monitors
+    WEBHOOK ||--o{ WEBHOOK_DELIVERY : sends
+    REPOSITORY ||--o{ RETENTION_POLICY : applies_to
+    REPOSITORY ||--o{ LEGAL_HOLD : subject_to
+    ACCESS_REVIEW ||--o{ PERMISSION : reviews
+    REPOSITORY ||--o{ SIGNED_URL_CONSTRAINT : constrains

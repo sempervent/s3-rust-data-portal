@@ -1,0 +1,1442 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="BlackLake Data Artifact Management Platform Documentation" name="description"/>
+<meta content="BlackLake Team" name="author"/>
+<link href="https://blacklake.github.io/blacklake/architecture/" rel="canonical"/>
+<link href="../MIGRATION_SETUP/" rel="prev"/>
+<link href="../PROJECT_STATUS/" rel="next"/>
+<link href="../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.6.21" name="generator"/>
+<title>BlackLake Architecture - BlackLake Documentation</title>
+<link href="../assets/stylesheets/main.2a3383ac.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+</head>
+<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#blacklake-architecture">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<div data-md-color-scheme="default" data-md-component="outdated" hidden="">
+</div>
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="BlackLake Documentation" class="md-header__button md-logo" data-md-component="logo" href=".." title="BlackLake Documentation">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            BlackLake Documentation
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              BlackLake Architecture
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"></path></svg>
+</label>
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_2" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+</label>
+<input aria-label="Switch to system preference" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_2" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to system preference">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<a aria-label="Share" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="Share">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"></path></svg>
+</a>
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/blacklake/blacklake" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+</div>
+<div class="md-source__repository">
+    blacklake/blacklake
+  </div>
+</a>
+</div>
+</nav>
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="..">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../documentation/">
+        
+  
+  
+    
+  
+  Documentation
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../getting-started/">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="./">
+          
+  
+  
+    
+  
+  Architecture &amp; Design
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../DEPLOYMENT/">
+          
+  
+  
+    
+  
+  Operations
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../SEARCH/">
+          
+  
+  
+    
+  
+  Features
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../VERIFICATION/">
+          
+  
+  
+    
+  
+  Verification
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../TODO/">
+          
+  
+  
+    
+  
+  Development
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="BlackLake Documentation" class="md-nav__button md-logo" data-md-component="logo" href=".." title="BlackLake Documentation">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    BlackLake Documentation
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/blacklake/blacklake" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+</div>
+<div class="md-source__repository">
+    blacklake/blacklake
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="..">
+<span class="md-ellipsis">
+    Home
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../documentation/">
+<span class="md-ellipsis">
+    Documentation
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+<a class="md-nav__link" href="../getting-started/">
+<span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+<span class="md-ellipsis">
+    Architecture &amp; Design
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Architecture &amp; Design
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    BlackLake Architecture
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    BlackLake Architecture
+    
+  </span>
+</a>
+<nav aria-label="On this page" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#system-overview">
+<span class="md-ellipsis">
+      System Overview
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#high-level-architecture">
+<span class="md-ellipsis">
+      High-Level Architecture
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#core-components">
+<span class="md-ellipsis">
+      Core Components
+    </span>
+</a>
+<nav aria-label="Core Components" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#api-server-rust">
+<span class="md-ellipsis">
+      API Server (Rust)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#database-layer">
+<span class="md-ellipsis">
+      Database Layer
+    </span>
+</a>
+<nav aria-label="Database Layer" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#postgresql-primary-database">
+<span class="md-ellipsis">
+      PostgreSQL (Primary Database)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#redis-cache-sessions">
+<span class="md-ellipsis">
+      Redis (Cache &amp; Sessions)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#apache-solr-search-engine">
+<span class="md-ellipsis">
+      Apache Solr (Search Engine)
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#storage-layer">
+<span class="md-ellipsis">
+      Storage Layer
+    </span>
+</a>
+<nav aria-label="Storage Layer" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#s3-compatible-storage">
+<span class="md-ellipsis">
+      S3-Compatible Storage
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#minio-development">
+<span class="md-ellipsis">
+      MinIO (Development)
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#job-processing">
+<span class="md-ellipsis">
+      Job Processing
+    </span>
+</a>
+<nav aria-label="Job Processing" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#apalis-framework">
+<span class="md-ellipsis">
+      Apalis Framework
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#job-types">
+<span class="md-ellipsis">
+      Job Types
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#data-flow">
+<span class="md-ellipsis">
+      Data Flow
+    </span>
+</a>
+<nav aria-label="Data Flow" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#file-upload-flow">
+<span class="md-ellipsis">
+      File Upload Flow
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#search-flow">
+<span class="md-ellipsis">
+      Search Flow
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#security-architecture">
+<span class="md-ellipsis">
+      Security Architecture
+    </span>
+</a>
+<nav aria-label="Security Architecture" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#authentication-authorization">
+<span class="md-ellipsis">
+      Authentication &amp; Authorization
+    </span>
+</a>
+<nav aria-label="Authentication &amp; Authorization" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#oidcjwt-integration">
+<span class="md-ellipsis">
+      OIDC/JWT Integration
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#multi-tenant-isolation">
+<span class="md-ellipsis">
+      Multi-tenant Isolation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#api-security">
+<span class="md-ellipsis">
+      API Security
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#data-protection">
+<span class="md-ellipsis">
+      Data Protection
+    </span>
+</a>
+<nav aria-label="Data Protection" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#encryption">
+<span class="md-ellipsis">
+      Encryption
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#access-controls">
+<span class="md-ellipsis">
+      Access Controls
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scalability-performance">
+<span class="md-ellipsis">
+      Scalability &amp; Performance
+    </span>
+</a>
+<nav aria-label="Scalability &amp; Performance" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#horizontal-scaling">
+<span class="md-ellipsis">
+      Horizontal Scaling
+    </span>
+</a>
+<nav aria-label="Horizontal Scaling" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#api-servers">
+<span class="md-ellipsis">
+      API Servers
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#database-scaling">
+<span class="md-ellipsis">
+      Database Scaling
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#storage-scaling">
+<span class="md-ellipsis">
+      Storage Scaling
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#performance-optimization">
+<span class="md-ellipsis">
+      Performance Optimization
+    </span>
+</a>
+<nav aria-label="Performance Optimization" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#caching-strategy">
+<span class="md-ellipsis">
+      Caching Strategy
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#query-optimization">
+<span class="md-ellipsis">
+      Query Optimization
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#monitoring-observability">
+<span class="md-ellipsis">
+      Monitoring &amp; Observability
+    </span>
+</a>
+<nav aria-label="Monitoring &amp; Observability" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#metrics-collection">
+<span class="md-ellipsis">
+      Metrics Collection
+    </span>
+</a>
+<nav aria-label="Metrics Collection" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#application-metrics">
+<span class="md-ellipsis">
+      Application Metrics
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#infrastructure-metrics">
+<span class="md-ellipsis">
+      Infrastructure Metrics
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#database-metrics">
+<span class="md-ellipsis">
+      Database Metrics
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#logging">
+<span class="md-ellipsis">
+      Logging
+    </span>
+</a>
+<nav aria-label="Logging" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#structured-logging">
+<span class="md-ellipsis">
+      Structured Logging
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#log-aggregation">
+<span class="md-ellipsis">
+      Log Aggregation
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#tracing">
+<span class="md-ellipsis">
+      Tracing
+    </span>
+</a>
+<nav aria-label="Tracing" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#distributed-tracing">
+<span class="md-ellipsis">
+      Distributed Tracing
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#deployment-architecture">
+<span class="md-ellipsis">
+      Deployment Architecture
+    </span>
+</a>
+<nav aria-label="Deployment Architecture" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#container-orchestration">
+<span class="md-ellipsis">
+      Container Orchestration
+    </span>
+</a>
+<nav aria-label="Container Orchestration" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#kubernetes">
+<span class="md-ellipsis">
+      Kubernetes
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#helm-charts">
+<span class="md-ellipsis">
+      Helm Charts
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#cicd-pipeline">
+<span class="md-ellipsis">
+      CI/CD Pipeline
+    </span>
+</a>
+<nav aria-label="CI/CD Pipeline" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#github-actions">
+<span class="md-ellipsis">
+      GitHub Actions
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#deployment-strategies">
+<span class="md-ellipsis">
+      Deployment Strategies
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#disaster-recovery">
+<span class="md-ellipsis">
+      Disaster Recovery
+    </span>
+</a>
+<nav aria-label="Disaster Recovery" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#backup-strategy">
+<span class="md-ellipsis">
+      Backup Strategy
+    </span>
+</a>
+<nav aria-label="Backup Strategy" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#database-backups">
+<span class="md-ellipsis">
+      Database Backups
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#storage-backups">
+<span class="md-ellipsis">
+      Storage Backups
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#high-availability">
+<span class="md-ellipsis">
+      High Availability
+    </span>
+</a>
+<nav aria-label="High Availability" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#multi-az-deployment">
+<span class="md-ellipsis">
+      Multi-AZ Deployment
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#active-standby">
+<span class="md-ellipsis">
+      Active-Standby
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#development-workflow">
+<span class="md-ellipsis">
+      Development Workflow
+    </span>
+</a>
+<nav aria-label="Development Workflow" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#local-development">
+<span class="md-ellipsis">
+      Local Development
+    </span>
+</a>
+<nav aria-label="Local Development" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#docker-compose">
+<span class="md-ellipsis">
+      Docker Compose
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#hot-reloading">
+<span class="md-ellipsis">
+      Hot Reloading
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#testing-strategy">
+<span class="md-ellipsis">
+      Testing Strategy
+    </span>
+</a>
+<nav aria-label="Testing Strategy" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#unit-tests">
+<span class="md-ellipsis">
+      Unit Tests
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#integration-tests">
+<span class="md-ellipsis">
+      Integration Tests
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#load-testing">
+<span class="md-ellipsis">
+      Load Testing
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../PROJECT_STATUS/">
+<span class="md-ellipsis">
+    BlackLake Project Status
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../IMPLEMENTATION_SUMMARY/">
+<span class="md-ellipsis">
+    BlackLake Implementation Summary
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+<a class="md-nav__link" href="../DEPLOYMENT/">
+<span class="md-ellipsis">
+    Operations
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+<a class="md-nav__link" href="../SEARCH/">
+<span class="md-ellipsis">
+    Features
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+<a class="md-nav__link" href="../VERIFICATION/">
+<span class="md-ellipsis">
+    Verification
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+<a class="md-nav__link" href="../TODO/">
+<span class="md-ellipsis">
+    Development
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<a class="md-content__button md-icon" href="https://github.com/blacklake/blacklake/edit/main/docs/architecture.md" rel="edit" title="Edit this page">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"></path></svg>
+</a>
+<a class="md-content__button md-icon" href="https://github.com/blacklake/blacklake/raw/main/docs/architecture.md" title="View source of this page">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
+</a>
+<h1 id="blacklake-architecture">BlackLake Architecture<a class="headerlink" href="#blacklake-architecture" title="Permanent link">¶</a></h1>
+<p>This document provides a comprehensive overview of the BlackLake architecture, including system components, data flow, and design principles.</p>
+<h2 id="system-overview">System Overview<a class="headerlink" href="#system-overview" title="Permanent link">¶</a></h2>
+<p>BlackLake is built as a modern, cloud-native data platform with the following key characteristics:</p>
+<ul>
+<li><strong>Microservices Architecture</strong>: Loosely coupled services with clear boundaries</li>
+<li><strong>API-First Design</strong>: RESTful APIs with OpenAPI specifications</li>
+<li><strong>Event-Driven</strong>: Asynchronous processing with event sourcing</li>
+<li><strong>Multi-tenant</strong>: Secure isolation between organizations</li>
+<li><strong>Scalable</strong>: Horizontal scaling capabilities</li>
+<li><strong>Observable</strong>: Comprehensive monitoring and logging</li>
+</ul>
+<h2 id="high-level-architecture">High-Level Architecture<a class="headerlink" href="#high-level-architecture" title="Permanent link">¶</a></h2>
+<pre class="mermaid"><code>graph TB
+    subgraph "External Users"
+        U1[Data Scientists]
+        U2[ML Engineers]
+        U3[Data Engineers]
+        U4[System Administrators]
+    end
+
+    subgraph "BlackLake Platform"
+        subgraph "API Gateway"
+            GW[Load Balancer]
+            AUTH[Authentication Service]
+            RATE[Rate Limiter]
+        end
+
+        subgraph "Core Services"
+            API[Rust API Server]
+            CLI[CLI Tool]
+            UI[React Web UI]
+            MOBILE[Mobile UI]
+        end
+
+        subgraph "Data Layer"
+            DB[(PostgreSQL)]
+            REDIS[(Redis Cache)]
+            SOLR[(Apache Solr)]
+        end
+
+        subgraph "Storage Layer"
+            S3[S3-Compatible Storage]
+            MINIO[MinIO]
+        end
+
+        subgraph "Job Processing"
+            JOB[Apalis Job Processor]
+            QUEUE[Redis Queue]
+            WORKER[Background Workers]
+        end
+
+        subgraph "Monitoring &amp; Observability"
+            METRICS[Prometheus]
+            LOGS[Grafana]
+            TRACE[Jaeger]
+        end
+    end</code></pre>
+<h2 id="core-components">Core Components<a class="headerlink" href="#core-components" title="Permanent link">¶</a></h2>
+<h3 id="api-server-rust">API Server (Rust)<a class="headerlink" href="#api-server-rust" title="Permanent link">¶</a></h3>
+<p>The API server is the heart of BlackLake, built with Rust for performance and safety:</p>
+<ul>
+<li><strong>Framework</strong>: Axum for HTTP handling</li>
+<li><strong>Authentication</strong>: JWT/OIDC integration</li>
+<li><strong>Database</strong>: PostgreSQL with connection pooling</li>
+<li><strong>Caching</strong>: Redis for session and query caching</li>
+<li><strong>Search</strong>: Apache Solr integration</li>
+<li><strong>Storage</strong>: S3-compatible object storage</li>
+</ul>
+<p><strong>Key Features</strong>:
+- RESTful API with OpenAPI documentation
+- Rate limiting and DDoS protection
+- Request/response logging and metrics
+- Health checks and monitoring
+- Multi-tenant data isolation</p>
+<h3 id="database-layer">Database Layer<a class="headerlink" href="#database-layer" title="Permanent link">¶</a></h3>
+<h4 id="postgresql-primary-database">PostgreSQL (Primary Database)<a class="headerlink" href="#postgresql-primary-database" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: Primary data store for metadata, users, permissions</li>
+<li><strong>Features</strong>: JSONB support for flexible metadata, full-text search</li>
+<li><strong>Scaling</strong>: Read replicas for query distribution</li>
+<li><strong>Backup</strong>: Automated backups with point-in-time recovery</li>
+</ul>
+<h4 id="redis-cache-sessions">Redis (Cache &amp; Sessions)<a class="headerlink" href="#redis-cache-sessions" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: Session storage, query caching, job queues</li>
+<li><strong>Features</strong>: Pub/sub for real-time updates, TTL for cache expiration</li>
+<li><strong>Scaling</strong>: Cluster mode for high availability</li>
+<li><strong>Persistence</strong>: RDB snapshots and AOF for durability</li>
+</ul>
+<h4 id="apache-solr-search-engine">Apache Solr (Search Engine)<a class="headerlink" href="#apache-solr-search-engine" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: Full-text search, faceted search, suggestions</li>
+<li><strong>Features</strong>: Distributed search, real-time indexing, spell checking</li>
+<li><strong>Scaling</strong>: SolrCloud for horizontal scaling</li>
+<li><strong>Schema</strong>: Managed schema with dynamic fields</li>
+</ul>
+<h3 id="storage-layer">Storage Layer<a class="headerlink" href="#storage-layer" title="Permanent link">¶</a></h3>
+<h4 id="s3-compatible-storage">S3-Compatible Storage<a class="headerlink" href="#s3-compatible-storage" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: Object storage for files and artifacts</li>
+<li><strong>Features</strong>: Versioning, lifecycle policies, server-side encryption</li>
+<li><strong>Scaling</strong>: Multi-region replication</li>
+<li><strong>Access</strong>: Signed URLs for secure access</li>
+</ul>
+<h4 id="minio-development">MinIO (Development)<a class="headerlink" href="#minio-development" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: S3-compatible storage for development</li>
+<li><strong>Features</strong>: Local development, testing, CI/CD</li>
+<li><strong>Configuration</strong>: Single-node or distributed mode</li>
+</ul>
+<h3 id="job-processing">Job Processing<a class="headerlink" href="#job-processing" title="Permanent link">¶</a></h3>
+<h4 id="apalis-framework">Apalis Framework<a class="headerlink" href="#apalis-framework" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Purpose</strong>: Background job processing</li>
+<li><strong>Features</strong>: Job queues, retry logic, dead letter queues</li>
+<li><strong>Scaling</strong>: Multiple workers with load balancing</li>
+<li><strong>Monitoring</strong>: Job metrics and failure tracking</li>
+</ul>
+<h4 id="job-types">Job Types<a class="headerlink" href="#job-types" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Metadata Extraction</strong>: Analyze files and extract metadata</li>
+<li><strong>RDF Generation</strong>: Create semantic representations</li>
+<li><strong>Export Jobs</strong>: Generate exports and reports</li>
+<li><strong>Cleanup Jobs</strong>: Retention policy enforcement</li>
+<li><strong>Webhook Delivery</strong>: Send notifications to external systems</li>
+</ul>
+<h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">¶</a></h2>
+<h3 id="file-upload-flow">File Upload Flow<a class="headerlink" href="#file-upload-flow" title="Permanent link">¶</a></h3>
+<pre class="mermaid"><code>sequenceDiagram
+    participant U as User
+    participant UI as Web UI
+    participant API as API Server
+    participant AUTH as Auth Service
+    participant DB as Database
+    participant S3 as S3 Storage
+    participant JOB as Job Processor
+    participant SOLR as Solr Index
+
+    U-&gt;&gt;UI: Upload file
+    UI-&gt;&gt;API: POST /api/v1/repos/{id}/files
+
+    API-&gt;&gt;AUTH: Validate JWT token
+    AUTH--&gt;&gt;API: Token valid
+
+    API-&gt;&gt;DB: Check repository permissions
+    DB--&gt;&gt;API: Permission granted
+
+    API-&gt;&gt;S3: Upload file to storage
+    S3--&gt;&gt;API: File uploaded successfully
+
+    API-&gt;&gt;DB: Create entry record
+    DB--&gt;&gt;API: Entry created
+
+    API-&gt;&gt;JOB: Queue metadata extraction job
+    JOB--&gt;&gt;API: Job queued
+
+    API--&gt;&gt;UI: Upload successful
+    UI--&gt;&gt;U: File uploaded
+
+    Note over JOB,SOLR: Background processing
+    JOB-&gt;&gt;S3: Download file for processing
+    S3--&gt;&gt;JOB: File content
+
+    JOB-&gt;&gt;JOB: Extract metadata
+    JOB-&gt;&gt;JOB: Generate checksum
+    JOB-&gt;&gt;JOB: Create RDF representation
+
+    JOB-&gt;&gt;DB: Update entry with metadata
+    DB--&gt;&gt;JOB: Entry updated
+
+    JOB-&gt;&gt;SOLR: Index document
+    SOLR--&gt;&gt;JOB: Document indexed
+
+    JOB-&gt;&gt;JOB: Mark job as completed</code></pre>
+<h3 id="search-flow">Search Flow<a class="headerlink" href="#search-flow" title="Permanent link">¶</a></h3>
+<pre class="mermaid"><code>sequenceDiagram
+    participant U as User
+    participant UI as Web UI
+    participant API as API Server
+    participant AUTH as Auth Service
+    participant CACHE as Redis Cache
+    participant SOLR as Solr Index
+    participant DB as Database
+
+    U-&gt;&gt;UI: Enter search query
+    UI-&gt;&gt;API: GET /api/v1/search?q={query}
+
+    API-&gt;&gt;AUTH: Validate JWT token
+    AUTH--&gt;&gt;API: Token valid
+
+    API-&gt;&gt;CACHE: Check cache for query
+    alt Cache hit
+        CACHE--&gt;&gt;API: Cached results
+        API--&gt;&gt;UI: Return cached results
+    else Cache miss
+        API-&gt;&gt;SOLR: Search index
+        SOLR--&gt;&gt;API: Search results
+
+        API-&gt;&gt;DB: Get additional metadata
+        DB--&gt;&gt;API: Metadata retrieved
+
+        API-&gt;&gt;API: Combine and rank results
+
+        API-&gt;&gt;CACHE: Store results in cache
+        CACHE--&gt;&gt;API: Results cached
+
+        API--&gt;&gt;UI: Return search results
+    end
+
+    UI--&gt;&gt;U: Display results</code></pre>
+<h2 id="security-architecture">Security Architecture<a class="headerlink" href="#security-architecture" title="Permanent link">¶</a></h2>
+<h3 id="authentication-authorization">Authentication &amp; Authorization<a class="headerlink" href="#authentication-authorization" title="Permanent link">¶</a></h3>
+<h4 id="oidcjwt-integration">OIDC/JWT Integration<a class="headerlink" href="#oidcjwt-integration" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Provider</strong>: External OIDC provider (Auth0, Okta, etc.)</li>
+<li><strong>Tokens</strong>: JWT tokens with role-based claims</li>
+<li><strong>Refresh</strong>: Automatic token refresh</li>
+<li><strong>Validation</strong>: Token signature and expiration validation</li>
+</ul>
+<h4 id="multi-tenant-isolation">Multi-tenant Isolation<a class="headerlink" href="#multi-tenant-isolation" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Data Isolation</strong>: Repository-level access control</li>
+<li><strong>Network Isolation</strong>: VPC and security groups</li>
+<li><strong>Resource Quotas</strong>: Per-tenant resource limits</li>
+<li><strong>Audit Logging</strong>: Complete audit trail</li>
+</ul>
+<h4 id="api-security">API Security<a class="headerlink" href="#api-security" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Rate Limiting</strong>: Per-user and per-IP limits</li>
+<li><strong>CORS</strong>: Configurable cross-origin policies</li>
+<li><strong>CSRF Protection</strong>: Double-submit token pattern</li>
+<li><strong>Input Validation</strong>: Comprehensive input sanitization</li>
+</ul>
+<h3 id="data-protection">Data Protection<a class="headerlink" href="#data-protection" title="Permanent link">¶</a></h3>
+<h4 id="encryption">Encryption<a class="headerlink" href="#encryption" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>At Rest</strong>: AES-256 encryption for stored data</li>
+<li><strong>In Transit</strong>: TLS 1.3 for all communications</li>
+<li><strong>Key Management</strong>: AWS KMS or HashiCorp Vault</li>
+<li><strong>Database</strong>: Transparent data encryption (TDE)</li>
+</ul>
+<h4 id="access-controls">Access Controls<a class="headerlink" href="#access-controls" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>RBAC</strong>: Role-based access control</li>
+<li><strong>ABAC</strong>: Attribute-based access control</li>
+<li><strong>Fine-grained</strong>: Repository and file-level permissions</li>
+<li><strong>Temporary</strong>: Time-limited access tokens</li>
+</ul>
+<h2 id="scalability-performance">Scalability &amp; Performance<a class="headerlink" href="#scalability-performance" title="Permanent link">¶</a></h2>
+<h3 id="horizontal-scaling">Horizontal Scaling<a class="headerlink" href="#horizontal-scaling" title="Permanent link">¶</a></h3>
+<h4 id="api-servers">API Servers<a class="headerlink" href="#api-servers" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Load Balancing</strong>: NGINX or cloud load balancer</li>
+<li><strong>Stateless</strong>: No server-side session state</li>
+<li><strong>Auto-scaling</strong>: Based on CPU and memory metrics</li>
+<li><strong>Health Checks</strong>: Automated health monitoring</li>
+</ul>
+<h4 id="database-scaling">Database Scaling<a class="headerlink" href="#database-scaling" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Read Replicas</strong>: Distribute read queries</li>
+<li><strong>Connection Pooling</strong>: Efficient connection management</li>
+<li><strong>Query Optimization</strong>: Indexing and query analysis</li>
+<li><strong>Partitioning</strong>: Table partitioning for large datasets</li>
+</ul>
+<h4 id="storage-scaling">Storage Scaling<a class="headerlink" href="#storage-scaling" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>S3</strong>: Virtually unlimited storage</li>
+<li><strong>CDN</strong>: CloudFront for global distribution</li>
+<li><strong>Caching</strong>: Multi-level caching strategy</li>
+<li><strong>Compression</strong>: Automatic compression for large files</li>
+</ul>
+<h3 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">¶</a></h3>
+<h4 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Application Cache</strong>: In-memory caching for frequently accessed data</li>
+<li><strong>Database Cache</strong>: Query result caching</li>
+<li><strong>CDN Cache</strong>: Static asset caching</li>
+<li><strong>Search Cache</strong>: Search result caching</li>
+</ul>
+<h4 id="query-optimization">Query Optimization<a class="headerlink" href="#query-optimization" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Indexing</strong>: Strategic database indexing</li>
+<li><strong>Query Analysis</strong>: Slow query identification</li>
+<li><strong>Connection Pooling</strong>: Efficient connection reuse</li>
+<li><strong>Batch Operations</strong>: Bulk operations for efficiency</li>
+</ul>
+<h2 id="monitoring-observability">Monitoring &amp; Observability<a class="headerlink" href="#monitoring-observability" title="Permanent link">¶</a></h2>
+<h3 id="metrics-collection">Metrics Collection<a class="headerlink" href="#metrics-collection" title="Permanent link">¶</a></h3>
+<h4 id="application-metrics">Application Metrics<a class="headerlink" href="#application-metrics" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Request Rate</strong>: API requests per second</li>
+<li><strong>Response Time</strong>: P50, P95, P99 latencies</li>
+<li><strong>Error Rate</strong>: 4xx and 5xx error rates</li>
+<li><strong>Business Metrics</strong>: User activity, data volume</li>
+</ul>
+<h4 id="infrastructure-metrics">Infrastructure Metrics<a class="headerlink" href="#infrastructure-metrics" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>CPU Usage</strong>: Server CPU utilization</li>
+<li><strong>Memory Usage</strong>: RAM and swap usage</li>
+<li><strong>Disk I/O</strong>: Storage performance</li>
+<li><strong>Network I/O</strong>: Network throughput</li>
+</ul>
+<h4 id="database-metrics">Database Metrics<a class="headerlink" href="#database-metrics" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Connection Pool</strong>: Active and idle connections</li>
+<li><strong>Query Performance</strong>: Slow query identification</li>
+<li><strong>Lock Contention</strong>: Database lock analysis</li>
+<li><strong>Replication Lag</strong>: Read replica lag monitoring</li>
+</ul>
+<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">¶</a></h3>
+<h4 id="structured-logging">Structured Logging<a class="headerlink" href="#structured-logging" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Format</strong>: JSON structured logs</li>
+<li><strong>Levels</strong>: DEBUG, INFO, WARN, ERROR</li>
+<li><strong>Context</strong>: Request ID, user ID, correlation ID</li>
+<li><strong>Sampling</strong>: Configurable log sampling</li>
+</ul>
+<h4 id="log-aggregation">Log Aggregation<a class="headerlink" href="#log-aggregation" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Collection</strong>: Fluentd or Fluent Bit</li>
+<li><strong>Storage</strong>: Elasticsearch or cloud logging</li>
+<li><strong>Search</strong>: Kibana or cloud search</li>
+<li><strong>Retention</strong>: Configurable log retention</li>
+</ul>
+<h3 id="tracing">Tracing<a class="headerlink" href="#tracing" title="Permanent link">¶</a></h3>
+<h4 id="distributed-tracing">Distributed Tracing<a class="headerlink" href="#distributed-tracing" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Framework</strong>: OpenTelemetry or Jaeger</li>
+<li><strong>Instrumentation</strong>: Automatic and manual instrumentation</li>
+<li><strong>Context Propagation</strong>: Request context across services</li>
+<li><strong>Performance Analysis</strong>: End-to-end request tracing</li>
+</ul>
+<h2 id="deployment-architecture">Deployment Architecture<a class="headerlink" href="#deployment-architecture" title="Permanent link">¶</a></h2>
+<h3 id="container-orchestration">Container Orchestration<a class="headerlink" href="#container-orchestration" title="Permanent link">¶</a></h3>
+<h4 id="kubernetes">Kubernetes<a class="headerlink" href="#kubernetes" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Pods</strong>: Container orchestration</li>
+<li><strong>Services</strong>: Service discovery and load balancing</li>
+<li><strong>Ingress</strong>: External traffic routing</li>
+<li><strong>ConfigMaps</strong>: Configuration management</li>
+<li><strong>Secrets</strong>: Secret management</li>
+</ul>
+<h4 id="helm-charts">Helm Charts<a class="headerlink" href="#helm-charts" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Templates</strong>: Kubernetes resource templates</li>
+<li><strong>Values</strong>: Environment-specific configuration</li>
+<li><strong>Dependencies</strong>: Chart dependencies</li>
+<li><strong>Upgrades</strong>: Rolling updates and rollbacks</li>
+</ul>
+<h3 id="cicd-pipeline">CI/CD Pipeline<a class="headerlink" href="#cicd-pipeline" title="Permanent link">¶</a></h3>
+<h4 id="github-actions">GitHub Actions<a class="headerlink" href="#github-actions" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Build</strong>: Docker image building</li>
+<li><strong>Test</strong>: Automated testing</li>
+<li><strong>Security</strong>: Vulnerability scanning</li>
+<li><strong>Deploy</strong>: Automated deployment</li>
+</ul>
+<h4 id="deployment-strategies">Deployment Strategies<a class="headerlink" href="#deployment-strategies" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Blue-Green</strong>: Zero-downtime deployments</li>
+<li><strong>Rolling</strong>: Gradual rollout</li>
+<li><strong>Canary</strong>: Traffic splitting for testing</li>
+<li><strong>Rollback</strong>: Quick rollback capabilities</li>
+</ul>
+<h2 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">¶</a></h2>
+<h3 id="backup-strategy">Backup Strategy<a class="headerlink" href="#backup-strategy" title="Permanent link">¶</a></h3>
+<h4 id="database-backups">Database Backups<a class="headerlink" href="#database-backups" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Frequency</strong>: Daily full backups</li>
+<li><strong>Incremental</strong>: Hourly incremental backups</li>
+<li><strong>Retention</strong>: 30-day retention policy</li>
+<li><strong>Testing</strong>: Regular restore testing</li>
+</ul>
+<h4 id="storage-backups">Storage Backups<a class="headerlink" href="#storage-backups" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Replication</strong>: Cross-region replication</li>
+<li><strong>Versioning</strong>: Object versioning</li>
+<li><strong>Lifecycle</strong>: Automated lifecycle policies</li>
+<li><strong>Encryption</strong>: Backup encryption</li>
+</ul>
+<h3 id="high-availability">High Availability<a class="headerlink" href="#high-availability" title="Permanent link">¶</a></h3>
+<h4 id="multi-az-deployment">Multi-AZ Deployment<a class="headerlink" href="#multi-az-deployment" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Availability Zones</strong>: Multi-AZ deployment</li>
+<li><strong>Load Balancing</strong>: Cross-AZ load balancing</li>
+<li><strong>Failover</strong>: Automatic failover</li>
+<li><strong>Monitoring</strong>: Health check monitoring</li>
+</ul>
+<h4 id="active-standby">Active-Standby<a class="headerlink" href="#active-standby" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Primary</strong>: Active database</li>
+<li><strong>Standby</strong>: Read-only replica</li>
+<li><strong>Promotion</strong>: Manual promotion procedures</li>
+<li><strong>Monitoring</strong>: Replication lag monitoring</li>
+</ul>
+<h2 id="development-workflow">Development Workflow<a class="headerlink" href="#development-workflow" title="Permanent link">¶</a></h2>
+<h3 id="local-development">Local Development<a class="headerlink" href="#local-development" title="Permanent link">¶</a></h3>
+<h4 id="docker-compose">Docker Compose<a class="headerlink" href="#docker-compose" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Services</strong>: All services in one stack</li>
+<li><strong>Networking</strong>: Service discovery</li>
+<li><strong>Volumes</strong>: Persistent data storage</li>
+<li><strong>Environment</strong>: Development configuration</li>
+</ul>
+<h4 id="hot-reloading">Hot Reloading<a class="headerlink" href="#hot-reloading" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>API Server</strong>: Cargo watch for Rust</li>
+<li><strong>Web UI</strong>: Vite hot module replacement</li>
+<li><strong>Database</strong>: Schema migrations</li>
+<li><strong>Testing</strong>: Automated testing</li>
+</ul>
+<h3 id="testing-strategy">Testing Strategy<a class="headerlink" href="#testing-strategy" title="Permanent link">¶</a></h3>
+<h4 id="unit-tests">Unit Tests<a class="headerlink" href="#unit-tests" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>Coverage</strong>: 80%+ code coverage</li>
+<li><strong>Isolation</strong>: Mock external dependencies</li>
+<li><strong>Performance</strong>: Benchmark testing</li>
+<li><strong>Security</strong>: Security testing</li>
+</ul>
+<h4 id="integration-tests">Integration Tests<a class="headerlink" href="#integration-tests" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>API Testing</strong>: End-to-end API testing</li>
+<li><strong>Database Testing</strong>: Database integration testing</li>
+<li><strong>Storage Testing</strong>: S3 integration testing</li>
+<li><strong>Search Testing</strong>: Solr integration testing</li>
+</ul>
+<h4 id="load-testing">Load Testing<a class="headerlink" href="#load-testing" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>k6 Scripts</strong>: Performance testing</li>
+<li><strong>Metrics</strong>: Performance metrics collection</li>
+<li><strong>Thresholds</strong>: Performance thresholds</li>
+<li><strong>Reporting</strong>: Performance reports</li>
+</ul>
+<p>This architecture provides a solid foundation for a scalable, secure, and maintainable data platform. The modular design allows for independent scaling of components and easy addition of new features.</p>
+<aside class="md-source-file">
+<span class="md-source-file__fact">
+<span class="md-icon" title="Last update">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
+</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 1, 2025 03:41:03 UTC">October 1, 2025</span>
+</span>
+<span class="md-source-file__fact">
+<span class="md-icon" title="Created">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"></path></svg>
+</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 1, 2025 03:41:03 UTC">October 1, 2025</span>
+</span>
+</aside>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<nav aria-label="Footer" class="md-footer__inner md-grid">
+<a aria-label="Previous: BlackLake Migration and CLI Setup" class="md-footer__link md-footer__link--prev" href="../MIGRATION_SETUP/">
+<div class="md-footer__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</div>
+<div class="md-footer__title">
+<span class="md-footer__direction">
+                Previous
+              </span>
+<div class="md-ellipsis">
+                BlackLake Migration and CLI Setup
+              </div>
+</div>
+</a>
+<a aria-label="Next: BlackLake Project Status" class="md-footer__link md-footer__link--next" href="../PROJECT_STATUS/">
+<div class="md-footer__title">
+<span class="md-footer__direction">
+                Next
+              </span>
+<div class="md-ellipsis">
+                BlackLake Project Status
+              </div>
+</div>
+<div class="md-footer__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+</div>
+</a>
+</nav>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      Copyright © 2024 BlackLake Team
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/blacklake/blacklake" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+</a>
+<a class="md-social__link" href="https://hub.docker.com/r/blacklake/blacklake" rel="noopener" target="_blank" title="hub.docker.com">
+<svg viewbox="0 0 640 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M349.9 236.3h-66.1v-59.4h66.1zm0-204.3h-66.1v60.7h66.1zm78.2 144.8H362v59.4h66.1zm-156.3-72.1h-66.1v60.1h66.1zm78.1 0h-66.1v60.1h66.1zm276.8 100c-14.4-9.7-47.6-13.2-73.1-8.4-3.3-24-16.7-44.9-41.1-63.7l-14-9.3-9.3 14c-18.4 27.8-23.4 73.6-3.7 103.8-8.7 4.7-25.8 11.1-48.4 10.7H2.4c-8.7 50.8 5.8 116.8 44 162.1 37.1 43.9 92.7 66.2 165.4 66.2 157.4 0 273.9-72.5 328.4-204.2 21.4.4 67.6.1 91.3-45.2 1.5-2.5 6.6-13.2 8.5-17.1zm-511.1-27.9h-66v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1zm78.1 0h-66.1v59.4h66.1zm-78.1-72.1h-66.1v60.1h66.1z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<div class="md-progress" data-md-component="progress" role="progressbar"></div>
+<script id="__config" type="application/json">{"base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.code.select", "content.tabs.link", "content.tooltips", "header.autohide", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+<script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+</body>
+</html>

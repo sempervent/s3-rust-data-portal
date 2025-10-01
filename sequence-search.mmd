@@ -1,0 +1,53 @@
+sequenceDiagram
+    participant U as User
+    participant UI as Web UI
+    participant API as API Server
+    participant AUTH as Auth Service
+    participant CACHE as Redis Cache
+    participant SOLR as Solr Index
+    participant DB as Database
+
+    U->>UI: Enter search query
+    UI->>API: GET /api/v1/search?q={query}
+    
+    API->>AUTH: Validate JWT token
+    AUTH-->>API: Token valid
+    
+    API->>CACHE: Check cache for query
+    alt Cache hit
+        CACHE-->>API: Cached results
+        API-->>UI: Return cached results
+    else Cache miss
+        API->>SOLR: Search index
+        SOLR-->>API: Search results
+        
+        API->>DB: Get additional metadata
+        DB-->>API: Metadata retrieved
+        
+        API->>API: Combine and rank results
+        
+        API->>CACHE: Store results in cache
+        CACHE-->>API: Results cached
+        
+        API-->>UI: Return search results
+    end
+    
+    UI-->>U: Display results
+    
+    Note over U,DB: Faceted search
+    U->>UI: Apply filters
+    UI->>API: GET /api/v1/search?q={query}&facet={filter}
+    
+    API->>CACHE: Check cache for filtered query
+    alt Cache hit
+        CACHE-->>API: Cached filtered results
+    else Cache miss
+        API->>SOLR: Search with filters
+        SOLR-->>API: Filtered results
+        
+        API->>CACHE: Cache filtered results
+        CACHE-->>API: Results cached
+    end
+    
+    API-->>UI: Return filtered results
+    UI-->>U: Display filtered results

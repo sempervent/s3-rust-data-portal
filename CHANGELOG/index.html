@@ -1,0 +1,1793 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="BlackLake Data Artifact Management Platform Documentation">
+      
+      
+        <meta name="author" content="BlackLake Team">
+      
+      
+        <link rel="canonical" href="https://blacklake.github.io/blacklake/CHANGELOG/">
+      
+      
+        <link rel="prev" href="../TODO/">
+      
+      
+        <link rel="next" href="../cli/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>BlackLake Changelog - BlackLake Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#blacklake-changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="BlackLake Documentation" class="md-header__button md-logo" aria-label="BlackLake Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BlackLake Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              BlackLake Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/blacklake/blacklake" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    blacklake/blacklake
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../documentation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Documentation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture & Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../DEPLOYMENT/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SEARCH/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../VERIFICATION/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Verification
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../TODO/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Development
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BlackLake Documentation" class="md-nav__button md-logo" aria-label="BlackLake Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    BlackLake Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/blacklake/blacklake" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    blacklake/blacklake
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../getting-started/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../architecture/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Architecture & Design
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../DEPLOYMENT/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Operations
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../SEARCH/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Features
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../VERIFICATION/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Verification
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Development
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TODO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BlackLake TODO - Future Work &amp; Enhancements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    BlackLake Changelog
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    BlackLake Changelog
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#week-1-critical-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Week 1 - Critical Infrastructure ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Week 1 - Critical Infrastructure ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authentication &amp; Security
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-processing-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Job Processing System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solr-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solr Integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#week-2-core-api-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Week 2 - Core API Features ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Week 2 - Core API Features ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connector-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connector Operations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compliance-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Compliance Features
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storage Operations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#governance-webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Governance &amp; Webhooks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#week-3-ui-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Week 3 - UI Implementation ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Week 3 - UI Implementation ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mobile-search-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mobile Search API
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobile-ui-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mobile UI Components
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobile-ui-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mobile UI Features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#week-4-infrastructure-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Week 4 - Infrastructure Operations ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Week 4 - Infrastructure Operations ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Operations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Session Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-functionality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export Functionality
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compliance-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Compliance Jobs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#week-5-performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Week 5 - Performance Optimization ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Week 5 - Performance Optimization ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redis-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Redis Caching
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring &amp; Metrics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analytics-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analytics &amp; Reporting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Testing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#final-implementation-phase-remaining-critical-stubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Final Implementation Phase - Remaining Critical Stubs ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Final Implementation Phase - Remaining Critical Stubs ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdf-metadata-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      RDF Metadata Processing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clamav-virus-scanning" class="md-nav__link">
+    <span class="md-ellipsis">
+      ClamAV Virus Scanning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-package-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export Package Creation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reindex-job-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reindex Job Processing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#infrastructure-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Infrastructure &amp; Operations ✅
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Infrastructure &amp; Operations ✅">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#active-standby-disaster-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Active-Standby &amp; Disaster Recovery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-lifecycle-governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cost &amp; Lifecycle Governance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#access-reviews-data-egress-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Reviews &amp; Data Egress Controls
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-baseline-load-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Baseline &amp; Load Testing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security &amp; Authentication
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure-operations_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Infrastructure &amp; Operations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    BlackLake CLI Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/blacklake/blacklake/edit/main/docs/CHANGELOG.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/blacklake/blacklake/raw/main/docs/CHANGELOG.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
+    </a>
+  
+
+
+<h1 id="blacklake-changelog">BlackLake Changelog<a class="headerlink" href="#blacklake-changelog" title="Permanent link">&para;</a></h1>
+<p>This document tracks all completed features and implementations in the BlackLake data platform.</p>
+<h2 id="week-1-critical-infrastructure">Week 1 - Critical Infrastructure ✅<a class="headerlink" href="#week-1-critical-infrastructure" title="Permanent link">&para;</a></h2>
+<h3 id="authentication-security">Authentication &amp; Security<a class="headerlink" href="#authentication-security" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>JWT Verification</strong>: Implemented proper OIDC token validation</li>
+<li>✅ <strong>OIDC Integration</strong>: Added JWKS key rotation and caching</li>
+<li>✅ <strong>Rate Limiting</strong>: Implemented request rate limiting</li>
+<li>✅ <strong>Request Timeouts</strong>: Added timeout handling</li>
+<li>✅ <strong>Circuit Breaker</strong>: Implemented circuit breaker patterns</li>
+</ul>
+<h3 id="job-processing-system">Job Processing System<a class="headerlink" href="#job-processing-system" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Apalis Framework</strong>: Integrated Redis-based job processing</li>
+<li>✅ <strong>Job Manager</strong>: Implemented comprehensive job management</li>
+<li>✅ <strong>Job Queues</strong>: Set up job queue processing</li>
+<li>✅ <strong>Antivirus Scans</strong>: Implemented ClamAV integration</li>
+<li>✅ <strong>CSV/Parquet Sampling</strong>: Added file sampling capabilities</li>
+<li>✅ <strong>ONNX Model Sniffing</strong>: Implemented model metadata extraction</li>
+<li>✅ <strong>RDF Generation</strong>: Added RDF metadata processing</li>
+<li>✅ <strong>Export Jobs</strong>: Implemented export functionality</li>
+<li>✅ <strong>Job Status</strong>: Added job status retrieval</li>
+<li>✅ <strong>Dead Letter Queues</strong>: Implemented failed job handling</li>
+<li>✅ <strong>Job Retry Logic</strong>: Added automatic retry mechanisms</li>
+</ul>
+<h3 id="solr-integration">Solr Integration<a class="headerlink" href="#solr-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>SolrClient</strong>: Implemented Solr document indexing</li>
+<li>✅ <strong>Document Updates</strong>: Added document update capabilities</li>
+<li>✅ <strong>Document Deletion</strong>: Implemented document removal</li>
+<li>✅ <strong>Search Queries</strong>: Added search functionality</li>
+<li>✅ <strong>Suggestions</strong>: Implemented search suggestions</li>
+<li>✅ <strong>Status Monitoring</strong>: Added Solr health checks</li>
+<li>✅ <strong>Reindex Jobs</strong>: Implemented full reindexing</li>
+</ul>
+<h2 id="week-2-core-api-features">Week 2 - Core API Features ✅<a class="headerlink" href="#week-2-core-api-features" title="Permanent link">&para;</a></h2>
+<h3 id="connector-operations">Connector Operations<a class="headerlink" href="#connector-operations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Connector Cloning</strong>: Implemented connector duplication</li>
+<li>✅ <strong>Connection Testing</strong>: Added connector test functionality</li>
+<li>✅ <strong>Data Syncing</strong>: Implemented connector synchronization</li>
+<li>✅ <strong>Status Retrieval</strong>: Added connector status monitoring</li>
+<li>✅ <strong>Audit Logging</strong>: Implemented connector audit trails</li>
+</ul>
+<h3 id="compliance-features">Compliance Features<a class="headerlink" href="#compliance-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Retention Policies</strong>: Implemented data retention management</li>
+<li>✅ <strong>Legal Holds</strong>: Added legal hold functionality</li>
+<li>✅ <strong>Audit Logs</strong>: Implemented comprehensive audit logging</li>
+<li>✅ <strong>Compliance Exports</strong>: Added compliance report generation</li>
+<li>✅ <strong>Admin Role Checks</strong>: Implemented proper authorization</li>
+<li>✅ <strong>Policy Enforcement</strong>: Added policy validation</li>
+</ul>
+<h3 id="storage-operations">Storage Operations<a class="headerlink" href="#storage-operations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>S3 Configuration</strong>: Implemented production-ready S3 setup</li>
+<li>✅ <strong>Retry Logic</strong>: Added exponential backoff retry</li>
+<li>✅ <strong>Lifecycle Policies</strong>: Implemented cost optimization</li>
+<li>✅ <strong>Versioning</strong>: Added S3 versioning support</li>
+<li>✅ <strong>Encryption</strong>: Implemented server-side encryption</li>
+</ul>
+<h3 id="governance-webhooks">Governance &amp; Webhooks<a class="headerlink" href="#governance-webhooks" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Webhook Delivery</strong>: Implemented webhook delivery tracking</li>
+<li>✅ <strong>Database Queries</strong>: Added webhook history queries</li>
+<li>✅ <strong>Delivery Status</strong>: Implemented status monitoring</li>
+<li>✅ <strong>Retry Scheduling</strong>: Added webhook retry logic</li>
+<li>✅ <strong>Dead Letter Queue</strong>: Implemented failed webhook handling</li>
+</ul>
+<h2 id="week-3-ui-implementation">Week 3 - UI Implementation ✅<a class="headerlink" href="#week-3-ui-implementation" title="Permanent link">&para;</a></h2>
+<h3 id="mobile-search-api">Mobile Search API<a class="headerlink" href="#mobile-search-api" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>API Service</strong>: Created mobileSearchApi.ts</li>
+<li>✅ <strong>Search Integration</strong>: Implemented real API calls</li>
+<li>✅ <strong>Suggestions</strong>: Added search suggestions</li>
+<li>✅ <strong>Compliance</strong>: Implemented compliance API calls</li>
+<li>✅ <strong>Connectors</strong>: Added connector management API</li>
+</ul>
+<h3 id="mobile-ui-components">Mobile UI Components<a class="headerlink" href="#mobile-ui-components" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Search Context</strong>: Updated MobileSearchContext.tsx</li>
+<li>✅ <strong>Search Store</strong>: Updated mobileSearch.ts store</li>
+<li>✅ <strong>Search Pages</strong>: Updated MobileSearchPage.tsx</li>
+<li>✅ <strong>Semantic Search</strong>: Updated MobileSemanticSearchPage.tsx</li>
+<li>✅ <strong>Compliance Page</strong>: Updated MobileCompliancePage.tsx</li>
+<li>✅ <strong>Connectors Page</strong>: Updated MobileAdminConnectorsPage.tsx</li>
+</ul>
+<h3 id="mobile-ui-features">Mobile UI Features<a class="headerlink" href="#mobile-ui-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Pagination</strong>: Implemented search result pagination</li>
+<li>✅ <strong>File Viewer</strong>: Added file viewing capabilities</li>
+<li>✅ <strong>Download</strong>: Implemented file download functionality</li>
+<li>✅ <strong>Sharing</strong>: Added file sharing capabilities</li>
+<li>✅ <strong>Favorites</strong>: Implemented bookmark functionality</li>
+<li>✅ <strong>Notifications</strong>: Added toast notifications</li>
+<li>✅ <strong>Job Details</strong>: Implemented job detail viewing</li>
+</ul>
+<h2 id="week-4-infrastructure-operations">Week 4 - Infrastructure Operations ✅<a class="headerlink" href="#week-4-infrastructure-operations" title="Permanent link">&para;</a></h2>
+<h3 id="database-operations">Database Operations<a class="headerlink" href="#database-operations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Connection Pooling</strong>: Implemented database connection pooling</li>
+<li>✅ <strong>Retry Logic</strong>: Added exponential backoff retry</li>
+<li>✅ <strong>Health Checks</strong>: Implemented database health monitoring</li>
+<li>✅ <strong>Circuit Breaker</strong>: Added circuit breaker patterns</li>
+<li>✅ <strong>Read Replicas</strong>: Implemented read replica support</li>
+</ul>
+<h3 id="session-management">Session Management<a class="headerlink" href="#session-management" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Redis Integration</strong>: Implemented Redis session storage</li>
+<li>✅ <strong>Session Statistics</strong>: Added active/expired session tracking</li>
+<li>✅ <strong>Session Monitoring</strong>: Implemented session health checks</li>
+</ul>
+<h3 id="export-functionality">Export Functionality<a class="headerlink" href="#export-functionality" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Tarball Creation</strong>: Implemented real tar.gz archive creation</li>
+<li>✅ <strong>File Verification</strong>: Added file integrity checks</li>
+<li>✅ <strong>Error Handling</strong>: Implemented comprehensive error handling</li>
+</ul>
+<h3 id="compliance-jobs">Compliance Jobs<a class="headerlink" href="#compliance-jobs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>CSV Export</strong>: Implemented real CSV export for audit logs</li>
+<li>✅ <strong>Legal Holds Export</strong>: Added legal holds CSV export</li>
+<li>✅ <strong>Compliance Reports</strong>: Implemented comprehensive compliance reporting</li>
+</ul>
+<h2 id="week-5-performance-optimization">Week 5 - Performance Optimization ✅<a class="headerlink" href="#week-5-performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="redis-caching">Redis Caching<a class="headerlink" href="#redis-caching" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Search Results</strong>: Implemented Redis caching for search results</li>
+<li>✅ <strong>Metadata Caching</strong>: Added metadata caching</li>
+<li>✅ <strong>Cache Statistics</strong>: Implemented cache monitoring</li>
+<li>✅ <strong>TTL Management</strong>: Added configurable cache TTLs</li>
+</ul>
+<h3 id="database-optimization">Database Optimization<a class="headerlink" href="#database-optimization" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Query Optimization</strong>: Implemented optimized database queries</li>
+<li>✅ <strong>Indexing</strong>: Added database indexing</li>
+<li>✅ <strong>Dynamic Filtering</strong>: Implemented dynamic query building</li>
+<li>✅ <strong>Pagination</strong>: Added efficient pagination</li>
+<li>✅ <strong>Query Timing</strong>: Implemented query performance monitoring</li>
+</ul>
+<h3 id="monitoring-metrics">Monitoring &amp; Metrics<a class="headerlink" href="#monitoring-metrics" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>System Metrics</strong>: Implemented comprehensive system monitoring</li>
+<li>✅ <strong>API Metrics</strong>: Added API performance metrics</li>
+<li>✅ <strong>Database Metrics</strong>: Implemented database monitoring</li>
+<li>✅ <strong>Cache Metrics</strong>: Added cache performance metrics</li>
+</ul>
+<h3 id="analytics-reporting">Analytics &amp; Reporting<a class="headerlink" href="#analytics-reporting" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Usage Analytics</strong>: Implemented usage tracking</li>
+<li>✅ <strong>Performance Analytics</strong>: Added performance analysis</li>
+<li>✅ <strong>Security Analytics</strong>: Implemented security monitoring</li>
+<li>✅ <strong>Report Generation</strong>: Added analytics report generation</li>
+</ul>
+<h3 id="performance-testing">Performance Testing<a class="headerlink" href="#performance-testing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Load Testing</strong>: Implemented k6 load testing</li>
+<li>✅ <strong>Stress Testing</strong>: Added stress testing capabilities</li>
+<li>✅ <strong>Performance Benchmarks</strong>: Implemented performance benchmarking</li>
+</ul>
+<h2 id="final-implementation-phase-remaining-critical-stubs">Final Implementation Phase - Remaining Critical Stubs ✅<a class="headerlink" href="#final-implementation-phase-remaining-critical-stubs" title="Permanent link">&para;</a></h2>
+<h3 id="rdf-metadata-processing">RDF Metadata Processing<a class="headerlink" href="#rdf-metadata-processing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>JSON-LD Conversion</strong>: Implemented JSON-LD conversion with Dublin Core mapping</li>
+<li>✅ <strong>Turtle Format</strong>: Added Turtle format conversion with RDF serialization</li>
+<li>✅ <strong>Subject IRI</strong>: Implemented proper subject IRI generation</li>
+<li>✅ <strong>S3 Storage</strong>: Added RDF file storage in S3 with proper content-type headers</li>
+</ul>
+<h3 id="clamav-virus-scanning">ClamAV Virus Scanning<a class="headerlink" href="#clamav-virus-scanning" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Real-time Scanning</strong>: Implemented ClamAV daemon integration</li>
+<li>✅ <strong>S3 Integration</strong>: Added S3 file download and TCP communication</li>
+<li>✅ <strong>Scan Results</strong>: Implemented comprehensive scan result handling</li>
+<li>✅ <strong>Database Updates</strong>: Added scan result database updates</li>
+<li>✅ <strong>Quarantine</strong>: Implemented infected file quarantine handling</li>
+</ul>
+<h3 id="export-package-creation">Export Package Creation<a class="headerlink" href="#export-package-creation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Artifact Collection</strong>: Implemented complete artifact collection</li>
+<li>✅ <strong>Tarball Creation</strong>: Added metadata and blob file organization</li>
+<li>✅ <strong>Gzip Compression</strong>: Implemented efficient storage and transfer</li>
+<li>✅ <strong>S3 Upload</strong>: Added proper organization and presigned URL generation</li>
+<li>✅ <strong>Cleanup</strong>: Implemented temporary file cleanup and error handling</li>
+</ul>
+<h3 id="reindex-job-processing">Reindex Job Processing<a class="headerlink" href="#reindex-job-processing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Apalis Integration</strong>: Implemented asynchronous job processing</li>
+<li>✅ <strong>Job Enqueueing</strong>: Added proper job data structures</li>
+<li>✅ <strong>Batch Processing</strong>: Implemented efficient large-scale reindexing</li>
+<li>✅ <strong>Error Handling</strong>: Added comprehensive error handling</li>
+<li>✅ <strong>Status Tracking</strong>: Implemented job status monitoring</li>
+</ul>
+<h2 id="infrastructure-operations">Infrastructure &amp; Operations ✅<a class="headerlink" href="#infrastructure-operations" title="Permanent link">&para;</a></h2>
+<h3 id="active-standby-disaster-recovery">Active-Standby &amp; Disaster Recovery<a class="headerlink" href="#active-standby-disaster-recovery" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Database Replication</strong>: Implemented database replication setup</li>
+<li>✅ <strong>Failover Procedures</strong>: Added automated failover procedures</li>
+<li>✅ <strong>Health Endpoints</strong>: Implemented health check endpoints</li>
+<li>✅ <strong>Backup Validation</strong>: Added automated backup validation</li>
+<li>✅ <strong>Chaos Engineering</strong>: Implemented chaos engineering probes</li>
+</ul>
+<h3 id="cost-lifecycle-governance">Cost &amp; Lifecycle Governance<a class="headerlink" href="#cost-lifecycle-governance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Cost Estimation</strong>: Implemented cost tracking and estimation</li>
+<li>✅ <strong>Usage Metering</strong>: Added usage metering and monitoring</li>
+<li>✅ <strong>Budget Alerts</strong>: Implemented budget alert system</li>
+<li>✅ <strong>Lifecycle Policies</strong>: Added automated lifecycle management</li>
+</ul>
+<h3 id="access-reviews-data-egress-controls">Access Reviews &amp; Data Egress Controls<a class="headerlink" href="#access-reviews-data-egress-controls" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Access Review System</strong>: Implemented quarterly access review system</li>
+<li>✅ <strong>Signed URL Constraints</strong>: Added IP CIDR restrictions and user agent pinning</li>
+<li>✅ <strong>Rate Limiting</strong>: Implemented time-based access controls</li>
+<li>✅ <strong>Audit Logging</strong>: Added comprehensive access audit logging</li>
+</ul>
+<h3 id="performance-baseline-load-testing">Performance Baseline &amp; Load Testing<a class="headerlink" href="#performance-baseline-load-testing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>k6 Load Testing</strong>: Implemented comprehensive load testing scenarios</li>
+<li>✅ <strong>Performance Reporting</strong>: Added performance regression detection</li>
+<li>✅ <strong>Benchmarking</strong>: Implemented performance baseline establishment</li>
+<li>✅ <strong>Monitoring</strong>: Added real-time performance monitoring</li>
+</ul>
+<h3 id="documentation-system">Documentation System<a class="headerlink" href="#documentation-system" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>MkDocs</strong>: Implemented MkDocs with Material theme</li>
+<li>✅ <strong>Mermaid Diagrams</strong>: Added Mermaid diagram support</li>
+<li>✅ <strong>OpenAPI Integration</strong>: Implemented API documentation</li>
+<li>✅ <strong>CI for Docs</strong>: Added automated documentation building</li>
+<li>✅ <strong>Content Creation</strong>: Implemented comprehensive documentation</li>
+<li>✅ <strong>UI Help Integration</strong>: Added contextual help system</li>
+</ul>
+<h3 id="security-authentication">Security &amp; Authentication<a class="headerlink" href="#security-authentication" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>CSRF Protection</strong>: Implemented CSRF protection mechanisms</li>
+<li>✅ <strong>API Key Authentication</strong>: Added API key authentication</li>
+<li>✅ <strong>Request Signing</strong>: Implemented request signing and verification</li>
+<li>✅ <strong>Security Testing</strong>: Added security testing and penetration testing</li>
+</ul>
+<h3 id="infrastructure-operations_1">Infrastructure &amp; Operations<a class="headerlink" href="#infrastructure-operations_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Kubernetes Manifests</strong>: Implemented Kubernetes deployment manifests</li>
+<li>✅ <strong>Helm Charts</strong>: Added Helm chart support</li>
+<li>✅ <strong>Horizontal Pod Autoscaling</strong>: Implemented HPA configuration</li>
+<li>✅ <strong>Service Mesh</strong>: Added service mesh integration</li>
+<li>✅ <strong>Blue-Green Deployment</strong>: Implemented blue-green deployment</li>
+<li>✅ <strong>Automated Deployment</strong>: Added automated deployment pipelines</li>
+<li>✅ <strong>Rollback Procedures</strong>: Implemented automated rollback procedures</li>
+</ul>
+<hr />
+<p><strong>Last Updated</strong>: 2024-01-15
+<strong>Total Features Implemented</strong>: 150+ features across all categories
+<strong>Status</strong>: Production Ready ✅</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 1, 2025 03:57:23 UTC">October 1, 2025</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 1, 2025 03:57:23 UTC">October 1, 2025</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../TODO/" class="md-footer__link md-footer__link--prev" aria-label="Previous: BlackLake TODO - Future Work &amp;amp; Enhancements">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                BlackLake TODO - Future Work &amp; Enhancements
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cli/" class="md-footer__link md-footer__link--next" aria-label="Next: BlackLake CLI Documentation">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                BlackLake CLI Documentation
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 BlackLake Team
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/blacklake/blacklake" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://hub.docker.com/r/blacklake/blacklake" target="_blank" rel="noopener" title="hub.docker.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M349.9 236.3h-66.1v-59.4h66.1zm0-204.3h-66.1v60.7h66.1zm78.2 144.8H362v59.4h66.1zm-156.3-72.1h-66.1v60.1h66.1zm78.1 0h-66.1v60.1h66.1zm276.8 100c-14.4-9.7-47.6-13.2-73.1-8.4-3.3-24-16.7-44.9-41.1-63.7l-14-9.3-9.3 14c-18.4 27.8-23.4 73.6-3.7 103.8-8.7 4.7-25.8 11.1-48.4 10.7H2.4c-8.7 50.8 5.8 116.8 44 162.1 37.1 43.9 92.7 66.2 165.4 66.2 157.4 0 273.9-72.5 328.4-204.2 21.4.4 67.6.1 91.3-45.2 1.5-2.5 6.6-13.2 8.5-17.1zm-511.1-27.9h-66v59.4h66.1v-59.4zm78.1 0h-66.1v59.4h66.1zm78.1 0h-66.1v59.4h66.1zm-78.1-72.1h-66.1v60.1h66.1z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.code.select", "content.tabs.link", "content.tooltips", "header.autohide", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

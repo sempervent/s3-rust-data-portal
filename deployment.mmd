@@ -1,0 +1,145 @@
+graph TB
+    subgraph "Production Environment"
+        subgraph "Load Balancer"
+            LB[NGINX Load Balancer]
+            SSL[SSL Termination]
+        end
+
+        subgraph "API Tier"
+            API1[API Server 1]
+            API2[API Server 2]
+            API3[API Server N]
+        end
+
+        subgraph "Database Tier"
+            DB_PRIMARY[(PostgreSQL Primary)]
+            DB_REPLICA[(PostgreSQL Replica)]
+            DB_BACKUP[(Backup Storage)]
+        end
+
+        subgraph "Cache Tier"
+            REDIS1[(Redis Primary)]
+            REDIS2[(Redis Replica)]
+        end
+
+        subgraph "Search Tier"
+            SOLR1[Solr Node 1]
+            SOLR2[Solr Node 2]
+            SOLR3[Solr Node N]
+            ZK[Zookeeper]
+        end
+
+        subgraph "Storage Tier"
+            S3_PRIMARY[S3 Primary]
+            S3_REPLICA[S3 Replica]
+        end
+
+        subgraph "Job Processing"
+            WORKER1[Worker 1]
+            WORKER2[Worker 2]
+            WORKER3[Worker N]
+        end
+
+        subgraph "Monitoring"
+            PROMETHEUS[Prometheus]
+            GRAFANA[Grafana]
+            JAEGER[Jaeger]
+            ALERTMANAGER[AlertManager]
+        end
+    end
+
+    subgraph "Development Environment"
+        DEV_API[Dev API Server]
+        DEV_DB[(Dev Database)]
+        DEV_REDIS[(Dev Redis)]
+        DEV_SOLR[Dev Solr]
+        DEV_S3[Dev S3]
+    end
+
+    subgraph "CI/CD Pipeline"
+        GITHUB[GitHub Actions]
+        BUILD[Docker Build]
+        TEST[Test Suite]
+        DEPLOY[Deploy]
+    end
+
+    %% Production connections
+    LB --> SSL
+    SSL --> API1
+    SSL --> API2
+    SSL --> API3
+
+    API1 --> DB_PRIMARY
+    API2 --> DB_PRIMARY
+    API3 --> DB_PRIMARY
+
+    DB_PRIMARY --> DB_REPLICA
+    DB_PRIMARY --> DB_BACKUP
+
+    API1 --> REDIS1
+    API2 --> REDIS1
+    API3 --> REDIS1
+
+    REDIS1 --> REDIS2
+
+    API1 --> SOLR1
+    API2 --> SOLR2
+    API3 --> SOLR3
+
+    SOLR1 --> ZK
+    SOLR2 --> ZK
+    SOLR3 --> ZK
+
+    API1 --> S3_PRIMARY
+    API2 --> S3_PRIMARY
+    API3 --> S3_PRIMARY
+
+    S3_PRIMARY --> S3_REPLICA
+
+    WORKER1 --> DB_PRIMARY
+    WORKER2 --> DB_PRIMARY
+    WORKER3 --> DB_PRIMARY
+
+    WORKER1 --> SOLR1
+    WORKER2 --> SOLR2
+    WORKER3 --> SOLR3
+
+    WORKER1 --> S3_PRIMARY
+    WORKER2 --> S3_PRIMARY
+    WORKER3 --> S3_PRIMARY
+
+    %% Monitoring connections
+    API1 --> PROMETHEUS
+    API2 --> PROMETHEUS
+    API3 --> PROMETHEUS
+    DB_PRIMARY --> PROMETHEUS
+    REDIS1 --> PROMETHEUS
+    SOLR1 --> PROMETHEUS
+
+    PROMETHEUS --> GRAFANA
+    PROMETHEUS --> ALERTMANAGER
+
+    %% CI/CD connections
+    GITHUB --> BUILD
+    BUILD --> TEST
+    TEST --> DEPLOY
+    DEPLOY --> API1
+    DEPLOY --> API2
+    DEPLOY --> API3
+
+    %% Development connections
+    DEV_API --> DEV_DB
+    DEV_API --> DEV_REDIS
+    DEV_API --> DEV_SOLR
+    DEV_API --> DEV_S3
+
+    %% Styling
+    classDef prodClass fill:#e8f5e8
+    classDef devClass fill:#e3f2fd
+    classDef cicdClass fill:#fff3e0
+    classDef monitorClass fill:#f3e5f5
+
+    class LB,SSL,API1,API2,API3,DB_PRIMARY,DB_REPLICA,REDIS1,REDIS2,SOLR1,SOLR2,SOLR3,S3_PRIMARY,S3_REPLICA,WORKER1,WORKER2,WORKER3 prodClass
+    class DEV_API,DEV_DB,DEV_REDIS,DEV_SOLR,DEV_S3 devClass
+    class GITHUB,BUILD,TEST,DEPLOY cicdClass
+    class PROMETHEUS,GRAFANA,JAEGER,ALERTMANAGER monitorClass
