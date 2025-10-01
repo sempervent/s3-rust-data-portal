@@ -1,0 +1,38 @@
+groups:
+- name: performance
+  rules:
+  - alert: HighRequestRate
+    expr: rate(http_requests_total[5m]) > 1000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High request rate"
+      description: "Request rate is above 1000 req/s for {{ $labels.job }}"
+
+  - alert: LowThroughput
+    expr: rate(http_requests_total[5m]) < 10
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low throughput"
+      description: "Request rate is below 10 req/s for {{ $labels.job }}"
+
+  - alert: HighConnectionCount
+    expr: http_connections_active > 1000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High connection count"
+      description: "Active connections are above 1000 for {{ $labels.job }}"
+
+  - alert: StorageLatency
+    expr: histogram_quantile(0.95, rate(s3_operation_duration_seconds_bucket[5m])) > 5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High storage latency"
+      description: "95th percentile storage operation latency is above 5s"

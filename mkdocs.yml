@@ -136,15 +136,26 @@ markdown_extensions:
 # Page tree
 nav:
   - Home: index.md
-  - Project Status: PROJECT_STATUS.md
-  - Verification: VERIFICATION.md
-  - Fast Setup: FAST_SETUP.md
-  - Implementation Summary: IMPLEMENTATION_SUMMARY.md
-  - Deployment: DEPLOYMENT.md
-  - Operations: OPERATIONS.md
-  - Search: SEARCH.md
-  - Sessions: SESSIONS.md
-  - Images: IMAGES.md
+  - Documentation: README.md
+  - Getting Started:
+    - getting-started.md
+    - QUICK_START.md
+    - local_testing.md
+  - Architecture & Design:
+    - architecture.md
+    - PROJECT_STATUS.md
+    - IMPLEMENTATION_SUMMARY.md
+  - Operations:
+    - DEPLOYMENT.md
+    - OPERATIONS.md
+    - ACTIVE_STANDBY_GUIDE.md
+  - Features:
+    - SEARCH.md
+    - SESSIONS.md
+    - IMAGES.md
+  - Verification:
+    - VERIFICATION.md
+    - FAST_SETUP.md
 
 # Extra
 extra:

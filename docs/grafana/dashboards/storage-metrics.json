@@ -1,0 +1,43 @@
+{
+  "dashboard": {
+    "title": "Storage Metrics",
+    "panels": [
+      {
+        "title": "S3 Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(s3_operations_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Storage Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "s3_bucket_size_bytes"
+          }
+        ]
+      },
+      {
+        "title": "Upload Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(s3_upload_bytes_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Download Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(s3_download_bytes_total[5m])"
+          }
+        ]
+      }
+    ]
+  }
+}
