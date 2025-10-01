@@ -136,7 +136,7 @@ markdown_extensions:
 # Page tree
 nav:
   - Home: index.md
-  - Documentation: README.md
+  - Documentation: documentation.md
   - Getting Started:
     - getting-started.md
     - QUICK_START.md
@@ -149,6 +149,11 @@ nav:
     - DEPLOYMENT.md
     - OPERATIONS.md
     - ACTIVE_STANDBY_GUIDE.md
+    - Runbooks:
+      - ops/runbooks/backup-restore.md
+      - ops/runbooks/disaster-recovery.md
+      - ops/runbooks/security-incident.md
+      - ops/runbooks/performance-troubleshooting.md
   - Features:
     - SEARCH.md
     - SESSIONS.md

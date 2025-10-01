@@ -273,7 +273,7 @@ just cli-run "init ./test-data --dry-run"
 
 ### Documentation
 - [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
-- [Migration Setup](../../MIGRATION_SETUP.md)
+- [Migration Setup](MIGRATION_SETUP.md)
 - [API Documentation](api/)
 
 ### Useful Commands
@@ -295,5 +295,5 @@ docker buildx bake --print
 3. **Run migrations** to set up the database schema
 4. **Test the complete workflow** from init to upload
 
-For more detailed information, see the main [README.md](../../README.md) and [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md).
+For more detailed information, see the main [README.md](README.md) and [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md).
 

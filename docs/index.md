@@ -213,7 +213,7 @@ For technical issues:
 
 ### Feature Requests
 For feature requests and future development:
-1. Check the [**TODO.md**](../../TODO.md) for carryover items
+1. Check the [**TODO.md**](TODO.md) for carryover items
 2. Review the [**Project Status**](PROJECT_STATUS.md) for roadmap
 3. Consult the [**Implementation Summary**](IMPLEMENTATION_SUMMARY.md) for current features
 
