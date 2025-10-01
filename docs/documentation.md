@@ -331,7 +331,7 @@ curl http://localhost:8080/health/storage
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](https://github.com/NAERM/s3-rust-data-portal/blob/main/LICENSE) file for details.
 
 ## Support
 

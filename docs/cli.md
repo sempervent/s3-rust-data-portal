@@ -100,6 +100,6 @@ blacklake-cli --help
 
 ## Additional Resources
 
-- [API Documentation](../api/)
+- [API Documentation](https://github.com/NAERM/s3-rust-data-portal/tree/main/crates/api)
 - [Getting Started Guide](getting-started.md)
 - [Local Testing Guide](local_testing.md)

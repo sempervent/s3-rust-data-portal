@@ -274,7 +274,7 @@ just cli-run "init ./test-data --dry-run"
 ### Documentation
 - [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
 - [Migration Setup](MIGRATION_SETUP.md)
-- [API Documentation](../api/)
+- [API Documentation](https://github.com/NAERM/s3-rust-data-portal/tree/main/crates/api)
 
 ### Useful Commands
 ```bash

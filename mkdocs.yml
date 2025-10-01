@@ -1,11 +1,11 @@
 site_name: BlackLake Documentation
 site_description: BlackLake Data Artifact Management Platform Documentation
 site_author: BlackLake Team
-site_url: https://blacklake.github.io/blacklake
+site_url: https://naerm.github.io/s3-rust-data-portal
 
 # Repository
-repo_name: blacklake/blacklake
-repo_url: https://github.com/blacklake/blacklake
+repo_name: NAERM/s3-rust-data-portal
+repo_url: https://github.com/NAERM/s3-rust-data-portal
 edit_uri: edit/main/docs/
 
 # Configuration
@@ -114,8 +114,8 @@ markdown_extensions:
   - pymdownx.magiclink:
       normalize_issue_symbols: true
       repo_url_shorthand: true
-      user: blacklake
-      repo: blacklake
+      user: NAERM
+      repo: s3-rust-data-portal
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.superfences:
@@ -137,6 +137,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Documentation: documentation.md
+  - Repository Overview: repository-overview.md
   - Getting Started:
     - getting-started.md
     - QUICK_START.md
