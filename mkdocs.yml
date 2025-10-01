@@ -164,6 +164,8 @@ nav:
     - FAST_SETUP.md
   - Development:
     - TODO.md
+    - CHANGELOG.md
+    - cli.md
 
 # Extra
 extra:

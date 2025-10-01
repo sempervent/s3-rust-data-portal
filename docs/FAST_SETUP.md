@@ -1,332 +1,272 @@
-# 🚀 BlackLake Fast Setup Guide
+# BlackLake Fast Setup Guide
 
-## ⚡ **One-Command Setup**
+This guide provides a quick setup for the BlackLake data platform with optimized build configurations.
+
+## Prerequisites
+
+- Rust 1.70+
+- Docker and Docker Compose
+- `just` command runner (optional, for dev commands)
+
+## Quick Start
+
+### 1. Clone and Build
 
 ```bash
-# Build everything and start the full stack
-just setup-all
+git clone https://github.com/your-org/blacklake.git
+cd blacklake
+
+# Build all crates with optimizations
+cargo build --workspace --release
+
+# Run tests
+cargo test --workspace
 ```
 
-## 🎯 **Smart Build Strategy**
+### 2. Start Services
 
-### **1. Build All Images (Multi-Arch + Local)**
 ```bash
-# Build all images locally with caching (FASTEST)
-just bake
+# Start all services with optimized configuration
+docker-compose up -d
 
-# Build specific components only
-just bake-target api
-just bake-target ui
-just bake-target gateway
-```
-
-### **2. Start Development Stack**
-```bash
-# Start full development environment
+# Or use just (if installed)
 just up-dev
-
-# Start with specific profiles
-just up-profiles "dev,search-os"  # Include Solr
-just up-profiles "dev,av"         # Include ClamAV
-just up-profiles "dev,ml"         # Include MLflow
 ```
 
-### **3. Build Rust Artifacts**
+### 3. Verify Setup
+
 ```bash
-# Build all Rust crates
-just build
+# Check all services are running
+docker-compose ps
 
-# Build in release mode (optimized)
-just build-release
+# Check API health
+curl http://localhost:8080/health
 
-# Build specific crate
-just build-crate api
-just build-crate core
+# Check database health
+curl http://localhost:8080/health/db
+
+# Check storage health
+curl http://localhost:8080/health/storage
 ```
 
-## 🔧 **Advanced Build Commands**
+## Optimized Build Configuration
 
-### **Multi-Architecture Builds**
-```bash
-# Build for specific platform only (faster)
-just bake-platform "linux/amd64" api
-just bake-platform "linux/arm64" ui
+### **Cargo.toml Optimizations**
 
-# Build and push to registry
-just bake-push
+```toml
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
 ```
 
-### **Development Workflow**
+### **Docker Build Optimizations**
+
+```dockerfile
+# Multi-stage build for smaller images
+FROM rust:1.70-slim as builder
+WORKDIR /app
+COPY . .
+RUN cargo build --release
+
+FROM debian:bookworm-slim
+COPY --from=builder /app/target/release/blacklake-api /usr/local/bin/
+CMD ["blacklake-api"]
+```
+
+### **Environment Variables**
+
 ```bash
-# Hot reload development
-just up-dev && just logs api
+# Performance optimizations
+RUST_LOG=info
+RUST_BACKTRACE=1
+DATABASE_POOL_SIZE=20
+REDIS_POOL_SIZE=10
+CACHE_TTL=3600
+```
+
+## Development Workflow
+
+### **Using Just Commands**
+
+```bash
+# Show all available commands
+just --list
+
+# Start development environment
+just up-dev
 
 # Run tests
 just test
 
-# Lint and format
-just lint
-just fmt
+# Build optimized release
+just build-release
+
+# Clean and rebuild
+just clean-build
 ```
 
-## 📦 **Build Groups (DRY Approach)**
-
-The `docker-bake.hcl` defines smart build groups:
+### **Hot Reload Development**
 
 ```bash
-# Core services only
-docker buildx bake core
+# Start with hot reload
+just dev
 
-# Development essentials
-docker buildx bake dev
+# Watch for changes
+just watch
 
-# Production stack
-docker buildx bake prod
-
-# Everything
-docker buildx bake all
-
-# Local development (fastest)
-docker buildx bake local
+# Run specific tests
+just test-unit
+just test-integration
 ```
 
-## ⚡ **Optimized Build Order**
+## Performance Tuning
 
-### **Parallel Build Strategy**
-```bash
-# Build core services in parallel
-docker buildx bake --parallel core &
-
-# Build additional services
-docker buildx bake --parallel observability &
-docker buildx bake --parallel ml &
-
-# Wait for all builds
-wait
-```
-
-### **Dependency-Aware Building**
-```bash
-# 1. Build base images first (shared layers)
-docker buildx bake api ui
-
-# 2. Build dependent services
-docker buildx bake gateway jobrunner
-
-# 3. Build optional services
-docker buildx bake otel-collector mlflow
-```
-
-## 🎯 **Smart Caching Strategy**
-
-### **Leverage BuildKit Cache**
-```bash
-# Use GitHub Actions cache (if available)
-docker buildx bake --cache-from type=gha all
-
-# Use local cache
-docker buildx bake --cache-from type=local all
-
-# Use registry cache
-docker buildx bake --cache-from type=registry,ref=ghcr.io/blacklake/api:cache all
-```
-
-### **Layer Optimization**
-```bash
-# Build with maximum cache utilization
-docker buildx bake --cache-to type=local,dest=/tmp/.buildx-cache all
-```
-
-## 🚀 **Production Build Pipeline**
-
-### **Complete Production Build**
-```bash
-# 1. Build all images with security attestations
-docker buildx bake secure
-
-# 2. Build remaining services
-docker buildx bake otel-collector mlflow
-
-# 3. Push to registry
-docker buildx bake --push all
-```
-
-### **Multi-Stage Build Optimization**
-```bash
-# Build with specific build args for optimization
-docker buildx bake \
-  --set *.output=type=docker \
-  --set *.build-arg:BUILDKIT_INLINE_CACHE=1 \
-  --set *.cache-from=type=local,src=/tmp/.buildx-cache \
-  all
-```
-
-## 🔧 **Environment-Specific Builds**
-
-### **Development (Fast Iteration)**
-```bash
-# Quick local build
-just bake && just up-dev
-
-# With hot reload
-just up-profiles "dev" && just logs api
-```
-
-### **Staging (Production-like)**
-```bash
-# Build production images locally
-docker buildx bake prod
-
-# Start production stack
-just up-prod
-```
-
-### **Production (Multi-Arch + Security)**
-```bash
-# Build with security attestations
-docker buildx bake secure
-
-# Build remaining services
-docker buildx bake otel-collector mlflow
-
-# Push to registry
-docker buildx bake --push all
-```
-
-## 📊 **Build Performance Tips**
-
-### **1. Use BuildKit Features**
-```bash
-# Enable BuildKit
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-# Use BuildKit cache mounts
-docker buildx bake --cache-from type=gha all
-```
-
-### **2. Parallel Builds**
-```bash
-# Build multiple targets in parallel
-docker buildx bake --parallel all
-```
-
-### **3. Platform-Specific Builds**
-```bash
-# Build for your platform only (faster)
-docker buildx bake --set *.platform=linux/amd64 all
-```
-
-### **4. Layer Caching**
-```bash
-# Use registry cache for faster builds
-docker buildx bake \
-  --set *.output=type=docker \
-  --set *.cache-from=type=registry,ref=ghcr.io/blacklake/api:cache \
-  all
-```
-
-## 🎯 **One-Liner Commands**
-
-### **Complete Setup**
-```bash
-# Build everything and start development
-just bake && just up-dev && just logs api
-```
-
-### **Production Ready**
-```bash
-# Build and start production stack
-docker buildx bake prod && just up-prod
-```
-
-### **Quick Development**
-```bash
-# Start with core services only
-just up-profiles "dev" && just logs api
-```
-
-### **Full Stack with All Features**
-```bash
-# Build and start everything
-just bake && just up-profiles "dev,search-os,av,ml" && just logs-all
-```
-
-## 🔍 **Build Verification**
-
-### **Check Build Status**
-```bash
-# List all built images
-docker images | grep blacklake
-
-# Check build cache
-docker buildx du
-
-# Verify multi-arch builds
-docker buildx imagetools inspect ghcr.io/blacklake/api:latest
-```
-
-### **Test Builds**
-```bash
-# Test API build
-docker run --rm blacklake-api:local --version
-
-# Test UI build
-docker run --rm blacklake-ui:local --version
-```
-
-## 📋 **Build Groups Reference**
-
-| Group | Targets | Use Case |
-|-------|---------|----------|
-| `local` | api-local, ui-local, gateway-local | Development |
-| `dev` | api, ui | Development essentials |
-| `core` | api, ui, gateway | Core services |
-| `prod` | api, ui, gateway | Production stack |
-| `all` | All services | Complete build |
-| `secure` | api-secure, ui-secure | Security-focused |
-| `observability` | otel-collector | Monitoring |
-| `ml` | mlflow | ML features |
-
-## 🎯 **Recommended Workflow**
-
-### **First Time Setup**
-```bash
-# 1. Build all images
-just bake
-
-# 2. Start development stack
-just up-dev
-
-# 3. Check logs
-just logs api
-```
-
-### **Daily Development**
-```bash
-# Quick start
-just up-dev && just logs api
-
-# With specific features
-just up-profiles "dev,search-os" && just logs solr
-```
-
-### **Production Deployment**
-```bash
-# Build production images
-docker buildx bake prod
-
-# Deploy
-just up-prod
-```
-
----
-
-## 🚀 **TL;DR - Fastest Setup**
+### **Database Optimization**
 
 ```bash
-# One command to rule them all
-just bake && just up-dev
+# Set database connection pool size
+export DATABASE_POOL_SIZE=20
+
+# Enable query logging
+export DATABASE_LOG_QUERIES=true
+
+# Set connection timeout
+export DATABASE_TIMEOUT=30s
 ```
 
-This builds all images locally and starts the development stack. The `docker-bake.hcl` configuration ensures optimal caching and parallel builds for maximum speed.
+### **Redis Configuration**
+
+```bash
+# Set Redis pool size
+export REDIS_POOL_SIZE=10
+
+# Set cache TTL
+export CACHE_TTL=3600
+
+# Enable Redis clustering
+export REDIS_CLUSTER=true
+```
+
+### **S3 Storage Optimization**
+
+```bash
+# Set S3 connection pool size
+export S3_POOL_SIZE=5
+
+# Enable S3 multipart uploads
+export S3_MULTIPART_THRESHOLD=100MB
+
+# Set S3 timeout
+export S3_TIMEOUT=60s
+```
+
+## Monitoring Setup
+
+### **Prometheus Configuration**
+
+```yaml
+# prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'blacklake-api'
+    static_configs:
+      - targets: ['api:8080']
+```
+
+### **Grafana Dashboards**
+
+```bash
+# Import dashboards
+curl -X POST http://localhost:3000/api/dashboards/db \
+  -H "Content-Type: application/json" \
+  -d @docs/grafana/dashboards/system-overview.json
+```
+
+## Troubleshooting
+
+### **Common Issues**
+
+1. **Build Failures**
+   ```bash
+   # Clean and rebuild
+   cargo clean
+   cargo build --workspace
+   ```
+
+2. **Database Connection Issues**
+   ```bash
+   # Check database status
+   docker-compose logs db
+   
+   # Reset database
+   docker-compose down -v
+   docker-compose up -d db
+   ```
+
+3. **Storage Issues**
+   ```bash
+   # Check MinIO status
+   docker-compose logs minio
+   
+   # Reset storage
+   docker-compose down -v
+   docker-compose up -d minio
+   ```
+
+### **Performance Issues**
+
+1. **Slow API Responses**
+   - Check database connection pool
+   - Verify Redis connectivity
+   - Monitor memory usage
+
+2. **High Memory Usage**
+   - Reduce connection pool sizes
+   - Enable garbage collection
+   - Monitor for memory leaks
+
+3. **Database Performance**
+   - Check query performance
+   - Verify indexes
+   - Monitor connection pool
+
+## Production Deployment
+
+### **Docker Compose Production**
+
+```bash
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
+
+# With custom configuration
+BLACKLAKE_DOMAIN=blacklake.example.com docker-compose -f docker-compose.prod.yml up -d
+```
+
+### **Kubernetes Deployment**
+
+```bash
+# Deploy to Kubernetes
+kubectl apply -f k8s/
+
+# With Helm
+helm install blacklake ./helm/blacklake -f helm/blacklake/values.yaml
+```
+
+## Additional Resources
+
+- [Local Testing Guide](local_testing.md)
+- [Migration Setup](MIGRATION_SETUP.md)
+- [CLI Documentation](cli.md)
+- [Project Status](PROJECT_STATUS.md)
+- [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+
+## Support
+
+- **Documentation**: [Documentation Home](index.md)
+- **Issues**: [GitHub Issues](https://github.com/your-org/blacklake/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/blacklake/discussions)

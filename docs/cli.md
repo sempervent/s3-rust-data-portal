@@ -100,6 +100,6 @@ blacklake-cli --help
 
 ## Additional Resources
 
-- [API Documentation](api/)
+- [API Documentation](../api/)
 - [Getting Started Guide](getting-started.md)
 - [Local Testing Guide](local_testing.md)
