@@ -357,8 +357,49 @@ impl ExportProcessor {
         std::fs::create_dir_all(archive_path.parent().unwrap())
             .map_err(|e| ApiError::InternalServerError(format!("Failed to create archive directory: {}", e)))?;
 
-        // This is a placeholder - in reality you'd use tar or zip
-        info!("Creating archive from {:?} to {:?}", archive_dir, archive_path);
+        // Implement real archive creation using tar
+        use std::process::Command;
+        use std::path::Path;
+        
+        let archive_path_str = archive_path.to_string_lossy();
+        let archive_dir_str = archive_dir.to_string_lossy();
+        
+        // Create tar.gz archive
+        let output = Command::new("tar")
+            .args(&["-czf", &archive_path_str, "-C", &archive_dir_str, "."])
+            .output()
+            .map_err(|e| ApiError::InternalServerError(format!("Failed to create archive: {}", e)))?;
+        
+        if !output.status.success() {
+            let error_msg = String::from_utf8_lossy(&output.stderr);
+            return Err(ApiError::InternalServerError(format!(
+                "Archive creation failed: {}",
+                error_msg
+            )));
+        }
+        
+        // Verify archive was created and has content
+        if !archive_path.exists() {
+            return Err(ApiError::InternalServerError(
+                "Archive file was not created".to_string()
+            ));
+        }
+        
+        let archive_size = std::fs::metadata(&archive_path)
+            .map_err(|e| ApiError::InternalServerError(format!("Failed to get archive metadata: {}", e)))?
+            .len();
+        
+        if archive_size == 0 {
+            return Err(ApiError::InternalServerError(
+                "Archive file is empty".to_string()
+            ));
+        }
+        
+        info!(
+            "Successfully created archive: {:?} ({} bytes)",
+            archive_path,
+            archive_size
+        );
         
         Ok(())
     }

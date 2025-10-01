@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 /// Connector manager implementation
 pub struct ConnectorManager {
-    connectors: Arc<RwLock<HashMap<Uuid, Box<dyn Connector>>>>,
+    connectors: Arc<RwLock<HashMap<Uuid, Arc<dyn Connector>>>>,
     configs: Arc<RwLock<HashMap<Uuid, ConnectorConfig>>>,
     statuses: Arc<RwLock<HashMap<Uuid, ConnectorStatus>>>,
 }
@@ -28,28 +28,28 @@ impl ConnectorManager {
     }
     
     /// Create connector from configuration
-    async fn create_connector(&self, id: Uuid, config: ConnectorConfig) -> Result<Box<dyn Connector>, ConnectorError> {
+    async fn create_connector(&self, _id: Uuid, config: ConnectorConfig) -> Result<Arc<dyn Connector>, ConnectorError> {
         match config.connector_type {
             ConnectorType::S3 => {
                 let s3_config: super::s3::S3ConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid S3 config: {}", e)))?;
                 
                 let connector = S3Connector::new(config.name.clone(), s3_config)?;
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
             ConnectorType::Postgres => {
                 let pg_config: super::postgres::PostgresConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid Postgres config: {}", e)))?;
                 
                 let connector = PostgresConnector::new(config.name.clone(), pg_config).await?;
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
             ConnectorType::Ckan => {
                 let ckan_config: super::ckan::CkanConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid CKAN config: {}", e)))?;
                 
                 let connector = CkanConnector::new(config.name.clone(), ckan_config);
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
         }
     }
@@ -131,13 +131,9 @@ impl ConnectorRegistry for ConnectorManager {
         Ok(())
     }
     
-    async fn get_connector(&self, id: Uuid) -> Result<Option<Box<dyn Connector>>, ConnectorError> {
+    async fn get_connector(&self, id: Uuid) -> Result<Option<Arc<dyn Connector>>, ConnectorError> {
         let connectors = self.connectors.read().await;
-        Ok(connectors.get(&id).map(|c| {
-            // This is a simplified approach - in production you'd need to clone the connector
-            // or use a different approach to return owned connectors
-            todo!("Implement connector cloning or use Arc<dyn Connector>")
-        }))
+        Ok(connectors.get(&id).cloned())
     }
     
     async fn list_connectors(&self) -> Result<Vec<ConnectorStatus>, ConnectorError> {
@@ -221,28 +217,28 @@ pub struct ConnectorFactory;
 
 #[async_trait]
 impl super::traits::ConnectorFactory for ConnectorFactory {
-    async fn create_connector(&self, config: ConnectorConfig) -> Result<Box<dyn Connector>, ConnectorError> {
+    async fn create_connector(&self, config: ConnectorConfig) -> Result<Arc<dyn Connector>, ConnectorError> {
         match config.connector_type {
             ConnectorType::S3 => {
                 let s3_config: super::s3::S3ConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid S3 config: {}", e)))?;
                 
                 let connector = S3Connector::new(config.name.clone(), s3_config)?;
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
             ConnectorType::Postgres => {
                 let pg_config: super::postgres::PostgresConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid Postgres config: {}", e)))?;
                 
                 let connector = PostgresConnector::new(config.name.clone(), pg_config).await?;
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
             ConnectorType::Ckan => {
                 let ckan_config: super::ckan::CkanConnectorConfig = serde_json::from_value(config.config)
                     .map_err(|e| ConnectorError::ConfigurationError(format!("Invalid CKAN config: {}", e)))?;
                 
                 let connector = CkanConnector::new(config.name.clone(), ckan_config);
-                Ok(Box::new(connector))
+                Ok(Arc::new(connector))
             }
         }
     }

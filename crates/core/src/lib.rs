@@ -5,9 +5,7 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
 use sophia::api::graph::Graph;
-use sophia::api::serializer::Stringifier;
 // use sophia::turtle::TurtleSerializer; // Commented out due to import issues
-use sophia::api::term::Term;
 use url::Url;
 
 // Re-export common types

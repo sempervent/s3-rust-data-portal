@@ -44,9 +44,10 @@ const MobileSearchPage: React.FC = () => {
   const handleLoadMore = useCallback(async () => {
     if (!loading && results.length < totalCount) {
       setPage(prev => prev + 1)
-      // TODO: Implement pagination in search store
+      // Implement pagination in search store
+      await loadMore()
     }
-  }, [loading, results.length, totalCount])
+  }, [loading, results.length, totalCount, loadMore])
 
   // Handle result click
   const handleResultClick = useCallback((result: SearchResult) => {

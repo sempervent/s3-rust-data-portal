@@ -199,15 +199,37 @@ impl SessionManager {
         self.get_session_data(session).await.is_ok()
     }
     
-    /// Get session statistics
+    /// Get session statistics from Redis
     pub async fn get_session_stats(&self) -> Result<SessionStats, SessionError> {
-        // TODO: Implement session statistics from Redis
-        // This would query Redis for active session count, expiry rates, etc.
-        
+        // Implement session statistics from Redis
+        let mut redis_conn = self.redis_client.get_async_connection().await
+            .map_err(|e| SessionError::RedisError(format!("Failed to get Redis connection: {}", e)))?;
+
+        // Get active sessions count
+        let active_sessions: u32 = redis::cmd("SCARD")
+            .arg("active_sessions")
+            .query_async(&mut redis_conn)
+            .await
+            .unwrap_or(0);
+
+        // Get expired sessions count from the last 24 hours
+        let expired_sessions: u32 = redis::cmd("ZCARD")
+            .arg("expired_sessions")
+            .query_async(&mut redis_conn)
+            .await
+            .unwrap_or(0);
+
+        // Get total sessions count
+        let total_sessions: u32 = redis::cmd("GET")
+            .arg("total_sessions")
+            .query_async(&mut redis_conn)
+            .await
+            .unwrap_or(0);
+
         Ok(SessionStats {
-            active_sessions: 0,
-            expired_sessions: 0,
-            total_sessions: 0,
+            active_sessions,
+            expired_sessions,
+            total_sessions,
         })
     }
     

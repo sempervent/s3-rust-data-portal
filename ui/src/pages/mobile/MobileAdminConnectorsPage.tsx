@@ -2,6 +2,7 @@
 // Week 8: Mobile/responsive UX with PWA support
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { searchHelpers } from '@/utils/mobileSearchHelpers'
 import { 
   Plus, 
   Settings, 
@@ -35,38 +36,9 @@ const MobileAdminConnectorsPage: React.FC = () => {
     const loadConnectors = async () => {
       setLoading(true)
       try {
-        // TODO: Replace with actual API call
-        const mockConnectors: Connector[] = [
-          {
-            id: '1',
-            name: 'Production S3 Bucket',
-            type: 's3',
-            config: { bucket: 'prod-data', region: 'us-east-1' },
-            status: 'active',
-            lastSync: new Date().toISOString(),
-            entryCount: 1250
-          },
-          {
-            id: '2',
-            name: 'Analytics Database',
-            type: 'postgres',
-            config: { host: 'db.example.com', database: 'analytics' },
-            status: 'active',
-            lastSync: new Date().toISOString(),
-            entryCount: 890
-          },
-          {
-            id: '3',
-            name: 'Open Data Portal',
-            type: 'ckan',
-            config: { baseUrl: 'https://data.example.com' },
-            status: 'error',
-            lastSync: new Date(Date.now() - 86400000).toISOString(),
-            entryCount: 0
-          }
-        ]
-        
-        setConnectors(mockConnectors)
+        // Replace with actual API call
+        const connectorsData = await searchHelpers.getConnectors()
+        setConnectors(connectorsData)
       } catch (error) {
         console.error('Failed to load connectors:', error)
       } finally {
@@ -85,8 +57,21 @@ const MobileAdminConnectorsPage: React.FC = () => {
   // Handle test connector
   const handleTestConnector = useCallback(async (connector: Connector) => {
     try {
-      // TODO: Implement connector test
-      console.log('Testing connector:', connector)
+      // Implement connector test
+      const response = await fetch(`/api/v1/connectors/${connector.id}/test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Connector test failed: ${response.status}`)
+      }
+      
+      const testResult = await response.json()
+      console.log('Connector test result:', testResult)
     } catch (error) {
       console.error('Failed to test connector:', error)
     }
@@ -95,8 +80,21 @@ const MobileAdminConnectorsPage: React.FC = () => {
   // Handle sync connector
   const handleSyncConnector = useCallback(async (connector: Connector) => {
     try {
-      // TODO: Implement connector sync
-      console.log('Syncing connector:', connector)
+      // Implement connector sync
+      const response = await fetch(`/api/v1/connectors/${connector.id}/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Connector sync failed: ${response.status}`)
+      }
+      
+      const syncResult = await response.json()
+      console.log('Connector sync result:', syncResult)
     } catch (error) {
       console.error('Failed to sync connector:', error)
     }
@@ -106,8 +104,20 @@ const MobileAdminConnectorsPage: React.FC = () => {
   const handleDeleteConnector = useCallback(async (connector: Connector) => {
     if (window.confirm(`Are you sure you want to delete "${connector.name}"?`)) {
       try {
-        // TODO: Implement connector deletion
-        console.log('Deleting connector:', connector)
+        // Implement connector deletion
+        const response = await fetch(`/api/v1/connectors/${connector.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Connector deletion failed: ${response.status}`)
+        }
+        
+        console.log('Connector deleted successfully:', connector)
         setConnectors(prev => prev.filter(c => c.id !== connector.id))
       } catch (error) {
         console.error('Failed to delete connector:', error)
@@ -348,9 +358,32 @@ const MobileAdminConnectorsPage: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // TODO: Implement connector creation
-                    setShowAddForm(false)
+                  onClick={async () => {
+                    // Implement connector creation
+                    try {
+                      const response = await fetch('/api/v1/connectors', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          name: newConnector.name,
+                          type: newConnector.type,
+                          config: newConnector.config
+                        })
+                      })
+                      
+                      if (!response.ok) {
+                        throw new Error(`Connector creation failed: ${response.status}`)
+                      }
+                      
+                      const createdConnector = await response.json()
+                      setConnectors(prev => [createdConnector, ...prev])
+                      setShowAddForm(false)
+                    } catch (error) {
+                      console.error('Failed to create connector:', error)
+                    }
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >

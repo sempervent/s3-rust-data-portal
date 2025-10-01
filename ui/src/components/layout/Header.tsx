@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/app/store'
 import { Button } from '@/components/ui/button'
 import { useJobSimulation } from '@/components/ui/JobsDock'
+import HelpIcon from '@/components/HelpIcon'
 
 export const Header: React.FC = () => {
   const { user, signoutRedirect } = useAuthStore()
@@ -32,6 +33,13 @@ export const Header: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Help Icon */}
+            <HelpIcon 
+              topic="getting-started"
+              variant="icon"
+              size="md"
+            />
+            
             {/* Demo Job Simulator */}
             <Button
               variant="ghost"

@@ -1,0 +1,307 @@
+# Default values for blacklake
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Image configuration
+image:
+  registry: docker.io
+  repository: blacklake
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# API service configuration
+api:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    registry: docker.io
+    repository: blacklake/api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    annotations: {}
+  
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: blacklake.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# UI service configuration
+ui:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    registry: docker.io
+    repository: blacklake/ui
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+    annotations: {}
+  
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: blacklake-ui.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Worker service configuration
+worker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    registry: docker.io
+    repository: blacklake/worker
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Database configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "blacklake"
+    username: "blacklake"
+    password: "blacklake"
+    database: "blacklake"
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+# Solr configuration
+solr:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: solr
+    tag: "9.0"
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
+# MinIO configuration
+minio:
+  enabled: true
+  auth:
+    rootUser: "admin"
+    rootPassword: "password123"
+  defaultBuckets: "blacklake"
+  persistence:
+    enabled: true
+    size: 50Gi
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  grafana:
+    enabled: true
+    adminPassword: "admin"
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Security configuration
+security:
+  csrf:
+    enabled: true
+    secret: "csrf-secret-key"
+  jwt:
+    secret: "jwt-secret-key"
+  apiKey:
+    secret: "api-key-secret"
+  requestSigning:
+    secret: "request-signing-secret"
+
+# Feature flags
+features:
+  semanticSearch: true
+  aiFeatures: true
+  compliance: true
+  multiTenancy: true
+  monitoring: true
+
+# Environment variables
+env:
+  LOG_LEVEL: "info"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  ENABLE_SEMANTIC_SEARCH: "true"
+  ENABLE_AI_FEATURES: "true"
+  ENABLE_COMPLIANCE: "true"
+  ENABLE_MULTI_TENANCY: "true"
+
+# Network policies
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Service mesh configuration
+serviceMesh:
+  enabled: false
+  type: "istio" # or "linkerd"
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention: "7d"
+  storage:
+    type: "s3"
+    bucket: "blacklake-backups"
+    region: "us-east-1"
+
+# Development configuration
+dev:
+  enabled: false
+  hotReload: false
+  debug: false

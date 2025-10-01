@@ -7,7 +7,6 @@ use rusoto_core::{Region, RusotoError};
 use rusoto_s3::{GetObjectRequest, ListObjectsV2Request, S3Client, S3};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::time::Duration;
 use uuid::Uuid;
 
 /// S3 connector configuration
@@ -43,7 +42,7 @@ impl S3Connector {
     }
     
     /// Generate presigned URL for S3 object
-    async fn generate_presigned_url(&self, key: &str, expires_in_seconds: u32) -> Result<String, ConnectorError> {
+    async fn generate_presigned_url(&self, key: &str, _expires_in_seconds: u32) -> Result<String, ConnectorError> {
         // For now, return a direct URL - in production, you'd use presigned URLs
         let endpoint = self.config.endpoint.as_deref().unwrap_or("https://s3.amazonaws.com");
         Ok(format!("{}/{}", endpoint, key))

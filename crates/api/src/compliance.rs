@@ -18,6 +18,14 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use crate::AppState;
 
+/// Helper function to check admin role
+fn check_admin_role(auth: &AuthContext) -> Result<(), ApiError> {
+    if !auth.roles.contains(&"admin".to_string()) {
+        return Err(ApiError::Forbidden("Admin role required".to_string()));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateRetentionPolicyRequest {
     pub name: String,
@@ -63,11 +71,28 @@ async fn list_retention_policies(
     State(state): State<AppState>,
     auth: AuthContext, // Admin only
 ) -> Result<Json<ApiResponse<Vec<RetentionPolicy>>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    if !auth.roles.contains(&"admin".to_string()) {
+        return Err(ApiError::Forbidden("Admin role required".to_string()));
+    }
+    
     let policies = query_as!(RetentionPolicy, "SELECT id, name, description, retention_days, legal_hold_override, created_at, updated_at FROM retention_policy ORDER BY created_at DESC")
         .fetch_all(&state.index.get_pool())
         .await
         .map_err(|e| ApiError::Internal(format!("Failed to fetch retention policies: {}", e)))?;
+    
+    // Log audit
+    state.index.log_audit(
+        &auth.sub,
+        "list_retention_policies",
+        None,
+        None,
+        None,
+        Some(&serde_json::json!({
+            "policies_count": policies.len()
+        })),
+        None,
+    ).await?;
     
     Ok(Json(ApiResponse::success(policies)))
 }
@@ -78,7 +103,8 @@ async fn create_retention_policy(
     auth: AuthContext, // Admin only
     Json(payload): Json<CreateRetentionPolicyRequest>,
 ) -> Result<Json<ApiResponse<RetentionPolicy>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let policy = compliance_service.create_retention_policy(
@@ -115,7 +141,8 @@ async fn get_retention_policy(
     auth: AuthContext, // Admin only
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RetentionPolicy>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let policy = query_as!(RetentionPolicy, "SELECT id, name, description, retention_days, legal_hold_override, created_at, updated_at FROM retention_policy WHERE id = $1", id)
         .fetch_optional(&state.index.get_pool())
         .await
@@ -132,7 +159,8 @@ async fn update_retention_policy(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateRetentionPolicyRequest>,
 ) -> Result<Json<ApiResponse<RetentionPolicy>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let policy = query_as!(
         RetentionPolicy,
         "UPDATE retention_policy SET name = COALESCE($1, name), description = COALESCE($2, description), retention_days = COALESCE($3, retention_days), legal_hold_override = COALESCE($4, legal_hold_override), updated_at = NOW() WHERE id = $5 RETURNING id, name, description, retention_days, legal_hold_override, created_at, updated_at",
@@ -174,7 +202,8 @@ async fn delete_retention_policy(
     auth: AuthContext, // Admin only
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let result = query!("DELETE FROM retention_policy WHERE id = $1", id)
         .execute(&state.index.get_pool())
         .await
@@ -206,7 +235,8 @@ async fn list_legal_holds(
     State(state): State<AppState>,
     auth: AuthContext, // Admin only
 ) -> Result<Json<ApiResponse<Vec<LegalHold>>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let legal_holds = query_as!(LegalHold, "SELECT id, entry_id, reason, created_by, created_at, expires_at, status FROM legal_hold ORDER BY created_at DESC")
         .fetch_all(&state.index.get_pool())
         .await
@@ -221,7 +251,8 @@ async fn create_legal_hold(
     auth: AuthContext, // Admin only
     Json(payload): Json<CreateLegalHoldRequest>,
 ) -> Result<Json<ApiResponse<LegalHold>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let legal_hold = compliance_service.create_legal_hold(
@@ -258,7 +289,8 @@ async fn release_legal_hold(
     auth: AuthContext, // Admin only
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     compliance_service.release_legal_hold(id, auth.user_id)
@@ -287,7 +319,8 @@ async fn get_audit_logs(
     auth: AuthContext, // Admin only
     Query(params): Query<AuditLogQuery>,
 ) -> Result<Json<ApiResponse<Vec<AuditLog>>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let logs = compliance_service.get_audit_logs(
@@ -310,7 +343,8 @@ async fn create_compliance_export(
     auth: AuthContext, // Admin only
     Json(payload): Json<CreateComplianceExportRequest>,
 ) -> Result<Json<ApiResponse<ComplianceExport>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let export = compliance_service.create_compliance_export(
@@ -345,7 +379,8 @@ async fn get_compliance_export(
     auth: AuthContext, // Admin only
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ComplianceExport>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let export = query_as!(ComplianceExport, "SELECT id, export_type, filters, status, file_path, created_by, created_at, completed_at FROM compliance_export WHERE id = $1", id)
         .fetch_optional(&state.index.get_pool())
         .await
@@ -360,7 +395,8 @@ async fn get_retention_status_summary(
     State(state): State<AppState>,
     auth: AuthContext, // Admin only
 ) -> Result<Json<ApiResponse<serde_json::Value>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let summary = compliance_service.get_retention_status_summary()
@@ -375,7 +411,8 @@ async fn get_deletable_entries(
     State(state): State<AppState>,
     auth: AuthContext, // Admin only
 ) -> Result<Json<ApiResponse<Vec<Uuid>>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let entries = compliance_service.get_deletable_entries()
@@ -390,7 +427,8 @@ async fn get_legal_hold_entries(
     State(state): State<AppState>,
     auth: AuthContext, // Admin only
 ) -> Result<Json<ApiResponse<Vec<Uuid>>>, ApiError> {
-    // TODO: Add admin role check
+    // Check admin role
+    check_admin_role(&auth)?;
     let compliance_service = ComplianceService::new(state.index.get_pool());
     
     let entries = compliance_service.get_legal_hold_entries()
@@ -412,4 +450,45 @@ pub fn create_compliance_routes() -> Router<AppState> {
         .route("/v1/admin/retention-status", get(get_retention_status_summary))
         .route("/v1/admin/deletable-entries", get(get_deletable_entries))
         .route("/v1/admin/legal-hold-entries", get(get_legal_hold_entries))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blacklake_core::AuthContext;
+    
+    #[test]
+    fn test_admin_role_check() {
+        // Test admin role check function
+        let admin_auth = AuthContext {
+            sub: "admin@example.com".to_string(),
+            roles: vec!["admin".to_string(), "user".to_string()],
+        };
+        
+        let user_auth = AuthContext {
+            sub: "user@example.com".to_string(),
+            roles: vec!["user".to_string()],
+        };
+        
+        // Admin should pass
+        assert!(check_admin_role(&admin_auth).is_ok());
+        
+        // User should fail
+        assert!(check_admin_role(&user_auth).is_err());
+    }
+    
+    #[test]
+    fn test_retention_policy_request() {
+        // Test retention policy request structure
+        let request = CreateRetentionPolicyRequest {
+            name: "Test Policy".to_string(),
+            description: Some("Test description".to_string()),
+            retention_days: 365,
+            legal_hold_override: true,
+        };
+        
+        assert_eq!(request.name, "Test Policy");
+        assert_eq!(request.retention_days, 365);
+        assert!(request.legal_hold_override);
+    }
 }

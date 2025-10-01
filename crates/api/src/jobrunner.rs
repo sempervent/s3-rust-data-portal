@@ -1,9 +1,17 @@
 // BlackLake JobRunner
-// Week 5: Background job processor
+// Week 1: Production-ready job processor with Redis
 
-use blacklake_core::Uuid;
+use blacklake_core::{
+    jobs::{JobContext, JobManager, BlackLakeJob, JobResponse, JobError},
+    Uuid,
+};
 use blacklake_index::IndexClient;
 use blacklake_storage::StorageClient;
+use apalis::{
+    prelude::*,
+    redis::RedisStorage,
+};
+use redis::Client as RedisClient;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use tracing::{error, info, warn};
@@ -15,15 +23,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     info!("Starting BlackLake JobRunner");
 
-    // TODO: Initialize database and storage clients
-    // let index = IndexClient::new(database_url).await?;
-    // let storage = StorageClient::new(s3_config).await?;
+    // Initialize Redis connection
+    let redis_url = std::env::var("REDIS_URL")
+        .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    
+    let redis_client = RedisClient::open(redis_url)
+        .map_err(|e| format!("Failed to connect to Redis: {}", e))?;
+    
+    let redis_storage = RedisStorage::new(redis_client);
+
+    // Initialize database and storage clients
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://localhost/blacklake".to_string());
+    
+    let index = IndexClient::new(&database_url).await
+        .map_err(|e| format!("Failed to initialize index client: {}", e))?;
+    
+    let storage = StorageClient::new().await
+        .map_err(|e| format!("Failed to initialize storage client: {}", e))?;
+
+    // Initialize job manager
+    let job_manager = JobManager::new(redis_storage.clone());
 
     // Start health check server
     let health_server = tokio::spawn(start_health_server());
 
-    // Start job processing loop
-    let job_processor = tokio::spawn(process_jobs());
+    // Start job processing workers
+    let job_processor = tokio::spawn(process_jobs(job_manager, index, storage));
 
     // Wait for shutdown signal
     tokio::select! {
@@ -55,17 +81,28 @@ async fn start_health_server() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn process_jobs() {
+async fn process_jobs(
+    job_manager: JobManager,
+    index: IndexClient,
+    storage: StorageClient,
+) {
+    info!("Starting job processing workers");
+    
     loop {
-        // TODO: Implement job processing logic
-        // - Poll for pending jobs
-        // - Process antivirus scans
-        // - Process CSV/Parquet sampling
-        // - Process ONNX model sniffing
-        // - Process RDF generation
-        // - Process export jobs
-        
-        info!("Processing jobs...");
-        sleep(Duration::from_secs(30)).await;
+        match job_manager.process_next_job(&index, &storage).await {
+            Ok(processed) => {
+                if processed {
+                    info!("Successfully processed a job");
+                } else {
+                    // No jobs available, wait before checking again
+                    sleep(Duration::from_secs(5)).await;
+                }
+            }
+            Err(e) => {
+                error!("Error processing job: {}", e);
+                // Wait before retrying
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
     }
 }

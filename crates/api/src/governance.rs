@@ -433,11 +433,26 @@ async fn get_webhook_deliveries(
 ) -> ApiResult<Json<WebhookDeliveryResponse>> {
     let _auth = extract_auth(&headers).await?;
     
-    // TODO: Implement webhook delivery history query
-    // For now, return empty results
+    // Query webhook delivery history from database
+    let deliveries = sqlx::query_as!(
+        WebhookDelivery,
+        "SELECT id, webhook_id, event_type, payload, status, response_code, response_body, 
+         created_at, updated_at, retry_count, next_retry_at
+         FROM webhook_deliveries 
+         WHERE webhook_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 100",
+        webhook_id
+    )
+    .fetch_all(&state.index.get_pool())
+    .await
+    .map_err(|e| ApiError::Internal(format!("Failed to fetch webhook deliveries: {}", e)))?;
+    
+    let total = deliveries.len() as u32;
+    
     Ok(Json(WebhookDeliveryResponse {
-        deliveries: vec![],
-        total: 0,
+        deliveries,
+        total,
     }))
 }
 
@@ -574,11 +589,159 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_protection_not_found() {
-        // TODO: Implement test with mock index client
+        // Implement test with mock index client
+        use blacklake_index::{IndexClient, IndexError};
+        use std::sync::Arc;
+        use mockall::mock;
+
+        mock! {
+            IndexClient {}
+
+            #[async_trait]
+            impl blacklake_index::IndexClientTrait for IndexClient {
+                async fn get_protection(&self, repo_id: &str, ref_name: &str) -> Result<Option<ProtectedRef>, IndexError>;
+                async fn set_protection(&self, protection: ProtectedRef) -> Result<(), IndexError>;
+                async fn get_quota(&self, repo_id: &str) -> Result<Option<RepoQuota>, IndexError>;
+                async fn set_quota(&self, quota: RepoQuota) -> Result<(), IndexError>;
+                async fn get_retention_policies(&self) -> Result<Vec<RetentionPolicy>, IndexError>;
+                async fn create_retention_policy(&self, policy: RetentionPolicy) -> Result<(), IndexError>;
+                async fn get_webhooks(&self, repo_id: Option<&str>) -> Result<Vec<Webhook>, IndexError>;
+                async fn create_webhook(&self, webhook: Webhook) -> Result<(), IndexError>;
+            }
+        }
+
+        let mut mock_client = MockIndexClient::new();
+        mock_client.expect_get_protection()
+            .with(mockall::predicate::eq("nonexistent-repo"), mockall::predicate::eq("main"))
+            .times(1)
+            .returning(|_, _| Ok(None));
+
+        let app_state = AppState {
+            index: Arc::new(mock_client),
+            storage: Arc::new(blacklake_storage::StorageClient::new("test-bucket")),
+            connector_manager: Arc::new(blacklake_connectors::ConnectorManager::new()),
+        };
+
+        let app = create_router(app_state);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/repos/nonexistent-repo/protection/main")
+                    .method("GET")
+                    .header("Authorization", "Bearer test-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_set_protection_requires_admin() {
-        // TODO: Implement test with mock index client
+        // Implement test with mock index client
+        use blacklake_index::{IndexClient, IndexError};
+        use std::sync::Arc;
+        use mockall::mock;
+
+        mock! {
+            IndexClient {}
+
+            #[async_trait]
+            impl blacklake_index::IndexClientTrait for IndexClient {
+                async fn get_protection(&self, repo_id: &str, ref_name: &str) -> Result<Option<ProtectedRef>, IndexError>;
+                async fn set_protection(&self, protection: ProtectedRef) -> Result<(), IndexError>;
+                async fn get_quota(&self, repo_id: &str) -> Result<Option<RepoQuota>, IndexError>;
+                async fn set_quota(&self, quota: RepoQuota) -> Result<(), IndexError>;
+                async fn get_retention_policies(&self) -> Result<Vec<RetentionPolicy>, IndexError>;
+                async fn create_retention_policy(&self, policy: RetentionPolicy) -> Result<(), IndexError>;
+                async fn get_webhooks(&self, repo_id: Option<&str>) -> Result<Vec<Webhook>, IndexError>;
+                async fn create_webhook(&self, webhook: Webhook) -> Result<(), IndexError>;
+            }
+        }
+
+        let mock_client = MockIndexClient::new();
+        let app_state = AppState {
+            index: Arc::new(mock_client),
+            storage: Arc::new(blacklake_storage::StorageClient::new("test-bucket")),
+            connector_manager: Arc::new(blacklake_connectors::ConnectorManager::new()),
+        };
+
+        let app = create_router(app_state);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/repos/test-repo/protection/main")
+                    .method("PUT")
+                    .header("Authorization", "Bearer user-token") // Non-admin token
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(r#"{"require_admin_approval": true}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn test_get_quota_success() {
+        // Test successful quota retrieval
+        use blacklake_index::{IndexClient, IndexError};
+        use std::sync::Arc;
+        use mockall::mock;
+
+        mock! {
+            IndexClient {}
+
+            #[async_trait]
+            impl blacklake_index::IndexClientTrait for IndexClient {
+                async fn get_protection(&self, repo_id: &str, ref_name: &str) -> Result<Option<ProtectedRef>, IndexError>;
+                async fn set_protection(&self, protection: ProtectedRef) -> Result<(), IndexError>;
+                async fn get_quota(&self, repo_id: &str) -> Result<Option<RepoQuota>, IndexError>;
+                async fn set_quota(&self, quota: RepoQuota) -> Result<(), IndexError>;
+                async fn get_retention_policies(&self) -> Result<Vec<RetentionPolicy>, IndexError>;
+                async fn create_retention_policy(&self, policy: RetentionPolicy) -> Result<(), IndexError>;
+                async fn get_webhooks(&self, repo_id: Option<&str>) -> Result<Vec<Webhook>, IndexError>;
+                async fn create_webhook(&self, webhook: Webhook) -> Result<(), IndexError>;
+            }
+        }
+
+        let mut mock_client = MockIndexClient::new();
+        let expected_quota = RepoQuota {
+            repo_id: "test-repo".to_string(),
+            soft_limit_gb: 1.0,
+            hard_limit_gb: 2.0,
+            current_usage_gb: 0.5,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+
+        mock_client.expect_get_quota()
+            .with(mockall::predicate::eq("test-repo"))
+            .times(1)
+            .returning(move |_| Ok(Some(expected_quota.clone())));
+
+        let app_state = AppState {
+            index: Arc::new(mock_client),
+            storage: Arc::new(blacklake_storage::StorageClient::new("test-bucket")),
+            connector_manager: Arc::new(blacklake_connectors::ConnectorManager::new()),
+        };
+
+        let app = create_router(app_state);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/repos/test-repo/quota")
+                    .method("GET")
+                    .header("Authorization", "Bearer admin-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }

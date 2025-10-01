@@ -372,7 +372,7 @@ impl PolicyEngine {
     pub fn evaluate_branch_protection(
         protected_ref: &ProtectedRef,
         commit_id: Uuid,
-        user_id: &str,
+        _user_id: &str,
         is_admin: bool,
         check_results: &[CheckResult],
     ) -> PolicyEvaluation {

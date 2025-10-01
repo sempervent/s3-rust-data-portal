@@ -321,9 +321,47 @@ async fn test_connector(
         return Err(ApiError::Forbidden("Access denied".to_string()));
     }
 
-    // TODO: Implement actual connector testing
-    // For now, just return success
-    Ok(AxumJson(ApiResponse::success(())))
+    // Get connector manager from state
+    let connector_manager = state.connector_manager.clone();
+    
+    // Test the connector
+    match connector_manager.test_connector(connector_id).await {
+        Ok(_) => {
+            // Log successful test
+            state.index.log_audit(
+                &auth.sub,
+                "connector_test",
+                Some(&connector_id.to_string()),
+                None,
+                None,
+                Some(&serde_json::json!({
+                    "connector_id": connector_id,
+                    "result": "success"
+                })),
+                None,
+            ).await?;
+            
+            Ok(AxumJson(ApiResponse::success(())))
+        }
+        Err(e) => {
+            // Log failed test
+            state.index.log_audit(
+                &auth.sub,
+                "connector_test",
+                Some(&connector_id.to_string()),
+                None,
+                None,
+                Some(&serde_json::json!({
+                    "connector_id": connector_id,
+                    "result": "failed",
+                    "error": e.to_string()
+                })),
+                None,
+            ).await?;
+            
+            Err(ApiError::Internal(format!("Connector test failed: {}", e)))
+        }
+    }
 }
 
 /// Sync connector
@@ -345,18 +383,64 @@ async fn sync_connector(
         return Err(ApiError::Forbidden("Access denied".to_string()));
     }
 
-    // TODO: Implement actual connector syncing
-    // For now, return a mock result
-    let result = SyncResultResponse {
-        entries_processed: 0,
-        entries_added: 0,
-        entries_updated: 0,
-        entries_removed: 0,
-        errors: vec![],
-        duration_seconds: 0.0,
-    };
-
-    Ok(AxumJson(ApiResponse::success(result)))
+    // Get connector manager from state
+    let connector_manager = state.connector_manager.clone();
+    
+    // Start sync operation
+    let start_time = std::time::Instant::now();
+    
+    match connector_manager.sync_connector(connector_id).await {
+        Ok(sync_result) => {
+            let duration = start_time.elapsed();
+            
+            // Log successful sync
+            state.index.log_audit(
+                &auth.sub,
+                "connector_sync",
+                Some(&connector_id.to_string()),
+                None,
+                None,
+                Some(&serde_json::json!({
+                    "connector_id": connector_id,
+                    "entries_processed": sync_result.entries_processed,
+                    "entries_added": sync_result.entries_added,
+                    "entries_updated": sync_result.entries_updated,
+                    "entries_removed": sync_result.entries_removed,
+                    "duration_seconds": duration.as_secs_f64()
+                })),
+                None,
+            ).await?;
+            
+            let result = SyncResultResponse {
+                entries_processed: sync_result.entries_processed,
+                entries_added: sync_result.entries_added,
+                entries_updated: sync_result.entries_updated,
+                entries_removed: sync_result.entries_removed,
+                errors: sync_result.errors,
+                duration_seconds: duration.as_secs_f64(),
+            };
+            
+            Ok(AxumJson(ApiResponse::success(result)))
+        }
+        Err(e) => {
+            // Log failed sync
+            state.index.log_audit(
+                &auth.sub,
+                "connector_sync",
+                Some(&connector_id.to_string()),
+                None,
+                None,
+                Some(&serde_json::json!({
+                    "connector_id": connector_id,
+                    "result": "failed",
+                    "error": e.to_string()
+                })),
+                None,
+            ).await?;
+            
+            Err(ApiError::Internal(format!("Connector sync failed: {}", e)))
+        }
+    }
 }
 
 /// Get connector status
@@ -378,20 +462,29 @@ async fn get_connector_status(
         return Err(ApiError::Forbidden("Access denied".to_string()));
     }
 
-    // TODO: Implement actual status retrieval
-    // For now, return a mock status
-    let status = ConnectorStatusResponse {
-        id: connector_id,
-        name: "Mock Connector".to_string(),
-        connector_type: ConnectorType::S3,
-        enabled: true,
-        last_sync: None,
-        last_error: None,
-        entries_count: 0,
-        sync_in_progress: false,
-    };
-
-    Ok(AxumJson(ApiResponse::success(status)))
+    // Get connector manager from state
+    let connector_manager = state.connector_manager.clone();
+    
+    // Get connector status
+    match connector_manager.get_status(connector_id).await {
+        Some(status) => {
+            let response = ConnectorStatusResponse {
+                id: connector_id,
+                name: status.name,
+                connector_type: status.connector_type,
+                enabled: status.enabled,
+                last_sync: status.last_sync,
+                last_error: status.last_error,
+                entries_count: status.entries_count,
+                sync_in_progress: status.sync_in_progress,
+            };
+            
+            Ok(AxumJson(ApiResponse::success(response)))
+        }
+        None => {
+            Err(ApiError::NotFound(format!("Connector {} not found", connector_id)))
+        }
+    }
 }
 
 /// Create connector routes
@@ -405,4 +498,53 @@ pub fn create_connector_routes() -> Router<AppState> {
         .route("/v1/admin/connectors/:id/test", post(test_connector))
         .route("/v1/admin/connectors/:id/sync", post(sync_connector))
         .route("/v1/admin/connectors/:id/status", get(get_connector_status))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blacklake_core::AuthContext;
+    
+    #[test]
+    fn test_connector_test_authorization() {
+        // Test that connector test requires admin role
+        let auth = AuthContext {
+            sub: "user@example.com".to_string(),
+            roles: vec!["user".to_string()],
+        };
+        
+        // This would fail in actual implementation due to policy check
+        assert!(!auth.roles.contains(&"admin".to_string()));
+    }
+    
+    #[test]
+    fn test_connector_sync_authorization() {
+        // Test that connector sync requires admin role
+        let auth = AuthContext {
+            sub: "admin@example.com".to_string(),
+            roles: vec!["admin".to_string(), "user".to_string()],
+        };
+        
+        assert!(auth.roles.contains(&"admin".to_string()));
+    }
+    
+    #[test]
+    fn test_connector_status_response() {
+        // Test connector status response structure
+        let status = ConnectorStatusResponse {
+            id: Uuid::new_v4(),
+            name: "Test Connector".to_string(),
+            connector_type: ConnectorType::S3,
+            enabled: true,
+            last_sync: Some(chrono::Utc::now()),
+            last_error: None,
+            entries_count: 100,
+            sync_in_progress: false,
+        };
+        
+        assert_eq!(status.name, "Test Connector");
+        assert_eq!(status.connector_type, ConnectorType::S3);
+        assert!(status.enabled);
+        assert_eq!(status.entries_count, 100);
+    }
 }

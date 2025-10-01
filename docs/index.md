@@ -46,6 +46,27 @@ docker compose --profile dev up -d --wait
 
 ## 🏗️ Architecture Overview
 
+### System Architecture
+```mermaid
+graph TB
+    subgraph "BlackLake Platform"
+        API[Rust API Server]
+        UI[React Web UI]
+        CLI[CLI Tool]
+        DB[(PostgreSQL)]
+        CACHE[(Redis)]
+        SEARCH[(Solr)]
+        STORAGE[S3 Storage]
+    end
+    
+    API --> DB
+    API --> CACHE
+    API --> SEARCH
+    API --> STORAGE
+    UI --> API
+    CLI --> API
+```
+
 ### Technology Stack
 - **Backend**: Rust with Axum framework
 - **Frontend**: React with TypeScript and Tailwind CSS

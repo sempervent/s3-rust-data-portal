@@ -2,6 +2,7 @@
 // Week 8: Mobile/responsive UX with PWA support
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { mobileSearchApi } from '@/services/mobileSearchApi'
 import { 
   Search, 
   Brain, 

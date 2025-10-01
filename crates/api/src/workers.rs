@@ -195,10 +195,29 @@ impl WebhookWorker {
         Ok(())
     }
 
-    /// Get webhook by ID (placeholder)
-    async fn get_webhook(&self, _webhook_id: Uuid) -> Result<Option<blacklake_core::governance::Webhook>, Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement webhook lookup in index client
-        Ok(None)
+    /// Get webhook by ID
+    async fn get_webhook(&self, webhook_id: Uuid) -> Result<Option<blacklake_core::governance::Webhook>, Box<dyn std::error::Error + Send + Sync>> {
+        // Implement webhook lookup in index client
+        self.index.get_webhook_by_id(webhook_id).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+    
+    /// Implement delivery status update in index client
+    async fn update_delivery_status(&self, delivery_id: Uuid, status: &str, response_code: Option<i32>, response_body: Option<String>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.index.update_webhook_delivery_status(delivery_id, status, response_code, response_body).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+    
+    /// Implement retry scheduling in index client
+    async fn schedule_retry(&self, webhook_id: Uuid, retry_count: i32, next_retry_at: chrono::DateTime<Utc>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.index.schedule_webhook_retry(webhook_id, retry_count, next_retry_at).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+    
+    /// Implement dead letter queue in index client
+    async fn move_to_dead_letter(&self, webhook_id: Uuid, error_message: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.index.move_webhook_to_dead_letter(webhook_id, error_message).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 }
 
@@ -245,9 +264,9 @@ impl RetentionWorker {
 
     /// Get repositories with retention policies
     async fn get_repos_with_retention_policies(&self) -> Result<Vec<blacklake_core::Repository>, Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement repository query with retention policies
-        // For now, return empty list
-        Ok(vec![])
+        // Implement repository query with retention policies
+        self.index.get_repos_with_retention_policies().await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 
     /// Clean up artifacts for a specific repository
@@ -287,22 +306,39 @@ impl RetentionWorker {
     }
 
     /// Find artifacts that should be hard deleted
-    async fn find_artifacts_to_delete(&self, _repo_id: Uuid, _cutoff: chrono::DateTime<chrono::Utc>) -> Result<Vec<Uuid>, Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement artifact query for hard deletion
-        Ok(vec![])
+    async fn find_artifacts_to_delete(&self, repo_id: Uuid, cutoff: chrono::DateTime<chrono::Utc>) -> Result<Vec<Uuid>, Box<dyn std::error::Error + Send + Sync>> {
+        // Implement artifact query for hard deletion
+        self.index.get_artifacts_for_hard_deletion(repo_id, cutoff).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 
     /// Tombstone an artifact (mark as deleted but keep metadata)
-    async fn tombstone_artifact(&self, _artifact_id: &Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement artifact tombstoning
-        info!("Tombstoned artifact {}", _artifact_id);
+    async fn tombstone_artifact(&self, artifact_id: &Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // Implement artifact tombstoning
+        self.index.tombstone_artifact(*artifact_id).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        info!("Tombstoned artifact {}", artifact_id);
         Ok(())
     }
 
     /// Hard delete an artifact (remove from storage and metadata)
-    async fn hard_delete_artifact(&self, _artifact_id: &Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement artifact hard deletion
-        info!("Hard deleted artifact {}", _artifact_id);
+    async fn hard_delete_artifact(&self, artifact_id: &Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // Implement artifact hard deletion
+        // First, get artifact metadata to find storage location
+        let artifact = self.index.get_artifact(*artifact_id).await?;
+        
+        // Delete from storage
+        if let Some(storage_path) = artifact.storage_path {
+            if let Err(e) = self.storage.delete_object(&storage_path).await {
+                warn!("Failed to delete artifact from storage {}: {}", storage_path, e);
+            }
+        }
+        
+        // Delete from database
+        self.index.hard_delete_artifact(*artifact_id).await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        
+        info!("Hard deleted artifact {}", artifact_id);
         Ok(())
     }
 }
@@ -361,15 +397,62 @@ impl ExportWorker {
 
     /// Create export package
     async fn create_export_package(&self, job: &blacklake_core::governance::ExportJob) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement export package creation
-        // This would involve:
+        // Implement export package creation
         // 1. Collecting all artifacts from the specified paths
-        // 2. Creating a tarball with blobs and metadata
-        // 3. Uploading to S3
-        // 4. Generating presigned download URL
+        let artifacts = self.index.get_artifacts_for_export(job.repo_id, &job.paths).await?;
         
+        // 2. Creating a tarball with blobs and metadata
+        let temp_dir = std::env::temp_dir().join(format!("export_{}", job.id));
+        std::fs::create_dir_all(&temp_dir)?;
+        
+        let mut tar_builder = tar::Builder::new(std::fs::File::create(temp_dir.join("export.tar"))?);
+        
+        for artifact in artifacts {
+            // Add metadata file
+            let metadata_path = format!("metadata/{}.json", artifact.id);
+            let metadata_json = serde_json::to_string_pretty(&artifact.metadata)?;
+            let mut header = tar::Header::new_gnu();
+            header.set_path(&metadata_path)?;
+            header.set_size(metadata_json.len() as u64);
+            header.set_cksum();
+            tar_builder.append(&header, metadata_json.as_bytes())?;
+            
+            // Add blob file if it exists
+            if let Some(blob_path) = &artifact.blob_path {
+                let blob_data = self.storage.get_object(blob_path).await?;
+                let blob_file_path = format!("blobs/{}", artifact.id);
+                let mut header = tar::Header::new_gnu();
+                header.set_path(&blob_file_path)?;
+                header.set_size(blob_data.len() as u64);
+                header.set_cksum();
+                tar_builder.append(&header, &blob_data)?;
+            }
+        }
+        
+        tar_builder.finish()?;
+        
+        // Compress the tarball
+        let tar_path = temp_dir.join("export.tar");
+        let gz_path = temp_dir.join("export.tar.gz");
+        
+        let mut gz_encoder = flate2::write::GzEncoder::new(
+            std::fs::File::create(&gz_path)?,
+            flate2::Compression::default()
+        );
+        std::io::copy(&mut std::fs::File::open(&tar_path)?, &mut gz_encoder)?;
+        gz_encoder.finish()?;
+        
+        // 3. Uploading to S3
         let s3_key = format!("exports/{}.tar.gz", job.id);
-        let download_url = format!("https://storage.example.com/{}", s3_key);
+        let gz_data = std::fs::read(&gz_path)?;
+        
+        self.storage.put_object(&s3_key, &gz_data).await?;
+        
+        // 4. Generating presigned download URL
+        let download_url = self.storage.get_presigned_url(&s3_key, 3600).await?;
+        
+        // Cleanup temp files
+        std::fs::remove_dir_all(&temp_dir)?;
         
         Ok((s3_key, download_url))
     }

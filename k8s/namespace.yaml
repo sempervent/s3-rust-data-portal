@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blacklake
+  labels:
+    name: blacklake
+    app.kubernetes.io/name: blacklake
+    app.kubernetes.io/instance: blacklake
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: platform
+    app.kubernetes.io/part-of: data-platform
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: blacklake-quota
+  namespace: blacklake
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    persistentvolumeclaims: "10"
+    pods: "20"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: blacklake-limits
+  namespace: blacklake
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container

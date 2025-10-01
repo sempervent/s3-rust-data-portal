@@ -1,0 +1,46 @@
+sequenceDiagram
+    participant U as User
+    participant UI as Web UI
+    participant API as API Server
+    participant AUTH as Auth Service
+    participant DB as Database
+    participant S3 as S3 Storage
+    participant JOB as Job Processor
+    participant SOLR as Solr Index
+
+    U->>UI: Upload file
+    UI->>API: POST /api/v1/repos/{id}/files
+    
+    API->>AUTH: Validate JWT token
+    AUTH-->>API: Token valid
+    
+    API->>DB: Check repository permissions
+    DB-->>API: Permission granted
+    
+    API->>S3: Upload file to storage
+    S3-->>API: File uploaded successfully
+    
+    API->>DB: Create entry record
+    DB-->>API: Entry created
+    
+    API->>JOB: Queue metadata extraction job
+    JOB-->>API: Job queued
+    
+    API-->>UI: Upload successful
+    UI-->>U: File uploaded
+    
+    Note over JOB,SOLR: Background processing
+    JOB->>S3: Download file for processing
+    S3-->>JOB: File content
+    
+    JOB->>JOB: Extract metadata
+    JOB->>JOB: Generate checksum
+    JOB->>JOB: Create RDF representation
+    
+    JOB->>DB: Update entry with metadata
+    DB-->>JOB: Entry updated
+    
+    JOB->>SOLR: Index document
+    SOLR-->>JOB: Document indexed
+    
+    JOB->>JOB: Mark job as completed

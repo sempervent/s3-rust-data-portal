@@ -2,6 +2,7 @@
 // Week 8: Mobile/responsive UX with PWA support
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { searchHelpers } from '@/utils/mobileSearchHelpers'
 import { 
   Shield, 
   Lock, 
@@ -50,72 +51,14 @@ const MobileCompliancePage: React.FC = () => {
     const loadData = async () => {
       setLoading(true)
       try {
-        // TODO: Replace with actual API calls
-        const mockEntries: ComplianceEntry[] = [
-          {
-            id: '1',
-            name: 'customer_data.csv',
-            path: '/datasets/customer_data.csv',
-            classification: 'restricted',
-            retentionUntil: '2025-12-31',
-            legalHold: true,
-            lastModified: new Date().toISOString(),
-            author: 'John Doe',
-            size: 1024000
-          },
-          {
-            id: '2',
-            name: 'sales_report.pdf',
-            path: '/reports/sales_report.pdf',
-            classification: 'internal',
-            retentionUntil: '2024-12-31',
-            legalHold: false,
-            lastModified: new Date().toISOString(),
-            author: 'Jane Smith',
-            size: 512000
-          },
-          {
-            id: '3',
-            name: 'public_dataset.json',
-            path: '/public/public_dataset.json',
-            classification: 'public',
-            retentionUntil: undefined,
-            legalHold: false,
-            lastModified: new Date().toISOString(),
-            author: 'Bob Johnson',
-            size: 256000
-          }
-        ]
+        // Replace with actual API calls
+        const [entriesData, auditLogsData] = await Promise.all([
+          searchHelpers.getComplianceEntries(),
+          searchHelpers.getAuditLogs()
+        ])
 
-        const mockAuditLogs: AuditLog[] = [
-          {
-            id: '1',
-            action: 'VIEW',
-            user: 'John Doe',
-            timestamp: new Date().toISOString(),
-            details: 'Viewed customer_data.csv',
-            ipAddress: '192.168.1.100'
-          },
-          {
-            id: '2',
-            action: 'DOWNLOAD',
-            user: 'Jane Smith',
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            details: 'Downloaded sales_report.pdf',
-            ipAddress: '192.168.1.101'
-          },
-          {
-            id: '3',
-            action: 'DELETE_ATTEMPT',
-            user: 'Bob Johnson',
-            timestamp: new Date(Date.now() - 7200000).toISOString(),
-            details: 'Attempted to delete customer_data.csv (blocked by legal hold)',
-            ipAddress: '192.168.1.102'
-          }
-        ]
-
-        setEntries(mockEntries)
-        setAuditLogs(mockAuditLogs)
+        setEntries(entriesData)
+        setAuditLogs(auditLogsData)
       } catch (error) {
         console.error('Failed to load compliance data:', error)
       } finally {
@@ -176,12 +119,42 @@ const MobileCompliancePage: React.FC = () => {
   // Handle export
   const handleExport = useCallback(async (format: 'json' | 'csv' | 'pdf') => {
     try {
-      // TODO: Implement compliance export
-      console.log('Exporting compliance data in', format, 'format')
+      // Implement compliance export
+      const response = await fetch('/api/v1/compliance/export', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          format,
+          filters: {
+            classification: selectedClassification,
+            action: selectedAction,
+            dateRange: selectedDateRange
+          }
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.status}`)
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `compliance-export.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      console.log('Compliance data exported successfully in', format, 'format')
     } catch (error) {
       console.error('Failed to export compliance data:', error)
     }
-  }, [])
+  }, [selectedClassification, selectedAction, selectedDateRange])
 
   // Filter entries
   const filteredEntries = entries.filter(entry =>

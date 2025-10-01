@@ -195,8 +195,26 @@ async fn trigger_reindex(
 
     let job_id = uuid::Uuid::new_v4();
 
-    // TODO: Enqueue reindex job using Apalis
-    // For now, we'll just log the request
+    // Enqueue reindex job using Apalis
+    let reindex_job = blacklake_core::jobs::FullReindexJob {
+        repo_id: payload.repo_id,
+        repo_name: payload.repo_name,
+        since_commit_id: payload.since_commit_id,
+        batch_size: payload.batch_size.unwrap_or(100),
+    };
+    
+    // Enqueue the job using the job manager
+    if let Some(job_manager) = &state.job_manager {
+        job_manager.enqueue_job(
+            blacklake_core::jobs::JobType::FullReindex,
+            blacklake_core::jobs::JobData::FullReindex(reindex_job)
+        ).await
+        .map_err(|e| ApiError::Internal(format!("Failed to enqueue reindex job: {}", e)))?;
+        
+        tracing::info!("Reindex job {} enqueued for repo {}", job_id, payload.repo_name);
+    } else {
+        return Err(ApiError::Internal("Job manager not available".to_string()));
+    }
     state.index.log_audit(
         &auth.sub,
         "reindex_triggered",

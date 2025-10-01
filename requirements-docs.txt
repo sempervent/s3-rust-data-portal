@@ -2,10 +2,9 @@
 mkdocs>=1.5.0
 mkdocs-material>=9.0.0
 
-# MkDocs Plugins
+# MkDocs Plugins for Mermaid and Git
 mkdocs-mermaid2-plugin>=1.1.1
 mkdocs-git-revision-date-localized-plugin>=1.2.0
-mkdocs-openapi-plugin>=0.6.0
 
 # Python Markdown Extensions
 pymdown-extensions>=10.0.0

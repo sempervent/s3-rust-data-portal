@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { SearchResult } from '@/types/search'
+import { mobileSearchApi } from '@/services/mobileSearchApi'
 
 interface SearchContextState {
   query: string
@@ -233,37 +234,17 @@ export const SearchProvider: React.FC<SearchProviderProps> = ({ children }) => {
         totalSearches: searchAnalytics.totalSearches + 1
       })
 
-      // TODO: Implement actual search API call
-      // For now, return mock results
-      const mockResults: SearchResult[] = [
-        {
-          id: '1',
-          name: 'customer_data.csv',
-          path: '/datasets/customer_data.csv',
-          description: 'Customer information and analytics data',
-          type: 'file',
-          size: 1024000,
-          lastModified: new Date().toISOString(),
-          author: 'John Doe',
-          tags: ['customers', 'analytics', 'data'],
-          repository: 'main'
-        },
-        {
-          id: '2',
-          name: 'sales_report.pdf',
-          path: '/reports/sales_report.pdf',
-          description: 'Monthly sales performance report',
-          type: 'file',
-          size: 512000,
-          lastModified: new Date().toISOString(),
-          author: 'Jane Smith',
-          tags: ['sales', 'report', 'performance'],
-          repository: 'main'
-        }
-      ]
+      // Implement actual search API call
+      const response = await mobileSearchApi.search({
+        query: query.trim(),
+        filters: filters,
+        sort: sort,
+        limit: 20,
+        offset: 0
+      })
 
-      setResults(mockResults)
-      setTotalCount(mockResults.length)
+      setResults(response.results)
+      setTotalCount(response.total)
     } catch (error) {
       console.error('Search failed:', error)
       setResults([])
@@ -278,27 +259,17 @@ export const SearchProvider: React.FC<SearchProviderProps> = ({ children }) => {
 
     setLoading(true)
     try {
-      // TODO: Implement pagination
-      // For now, just simulate loading more results
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock additional results
-      const additionalResults: SearchResult[] = [
-        {
-          id: `${results.length + 1}`,
-          name: `additional_file_${results.length + 1}.csv`,
-          path: `/datasets/additional_file_${results.length + 1}.csv`,
-          description: 'Additional search result',
-          type: 'file',
-          size: 256000,
-          lastModified: new Date().toISOString(),
-          author: 'System',
-          tags: ['additional', 'data'],
-          repository: 'main'
-        }
-      ]
+      // Implement pagination
+      const currentOffset = results.length
+      const response = await mobileSearchApi.search({
+        query: query,
+        filters: filters,
+        sort: sort,
+        limit: 20,
+        offset: currentOffset
+      })
 
-      setResults(prev => [...prev, ...additionalResults])
+      setResults(prev => [...prev, ...response.results])
     } catch (error) {
       console.error('Load more failed:', error)
     } finally {

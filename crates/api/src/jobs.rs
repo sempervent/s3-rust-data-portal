@@ -451,3 +451,215 @@ async fn extract_auth(_headers: &HeaderMap) -> Result<AuthContext, JobError> {
         scope: "admin".to_string(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blacklake_core::jobs::{JobManager, JobType, JobData, JobStatus};
+    use blacklake_storage::StorageClient;
+    use blacklake_index::IndexClient;
+    use std::sync::Arc;
+    use tokio::sync::mpsc;
+
+    #[tokio::test]
+    async fn test_antivirus_scanning() {
+        // Test antivirus scanning functionality
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::AntivirusScan {
+            repo_id: "test-repo".to_string(),
+            path: "test-file.txt".to_string(),
+            sha256: "test-hash".to_string(),
+        };
+
+        // Test job creation
+        let job_id = job_manager.enqueue_job(JobType::AntivirusScan, job_data).await.unwrap();
+        assert!(!job_id.is_empty());
+
+        // Test job processing
+        let (tx, mut rx) = mpsc::channel(100);
+        let result = job_manager.process_job(JobType::AntivirusScan, &mut rx).await;
+        
+        // Verify job was processed
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_csv_sampling() {
+        // Test CSV sampling functionality
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::CsvSample {
+            repo_id: "test-repo".to_string(),
+            path: "test-data.csv".to_string(),
+            sha256: "csv-hash".to_string(),
+            sample_size: 1000,
+        };
+
+        // Test job creation
+        let job_id = job_manager.enqueue_job(JobType::CsvSample, job_data).await.unwrap();
+        assert!(!job_id.is_empty());
+
+        // Test job processing
+        let (tx, mut rx) = mpsc::channel(100);
+        let result = job_manager.process_job(JobType::CsvSample, &mut rx).await;
+        
+        // Verify job was processed
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_parquet_sampling() {
+        // Test Parquet sampling functionality
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::ParquetSample {
+            repo_id: "test-repo".to_string(),
+            path: "test-data.parquet".to_string(),
+            sha256: "parquet-hash".to_string(),
+            sample_size: 1000,
+        };
+
+        // Test job creation
+        let job_id = job_manager.enqueue_job(JobType::ParquetSample, job_data).await.unwrap();
+        assert!(!job_id.is_empty());
+
+        // Test job processing
+        let (tx, mut rx) = mpsc::channel(100);
+        let result = job_manager.process_job(JobType::ParquetSample, &mut rx).await;
+        
+        // Verify job was processed
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_onnx_model_sniffing() {
+        // Test ONNX model sniffing functionality
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::OnnxSniff {
+            repo_id: "test-repo".to_string(),
+            path: "model.onnx".to_string(),
+            sha256: "onnx-hash".to_string(),
+        };
+
+        // Test job creation
+        let job_id = job_manager.enqueue_job(JobType::OnnxSniff, job_data).await.unwrap();
+        assert!(!job_id.is_empty());
+
+        // Test job processing
+        let (tx, mut rx) = mpsc::channel(100);
+        let result = job_manager.process_job(JobType::OnnxSniff, &mut rx).await;
+        
+        // Verify job was processed
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_proper_auth_extraction() {
+        // Test proper authentication extraction
+        let auth_context = create_test_auth_context();
+        
+        // Test user ID extraction
+        assert_eq!(auth_context.sub, "test-user@example.com");
+        
+        // Test role extraction
+        assert!(auth_context.roles.contains(&"admin".to_string()));
+        assert!(auth_context.roles.contains(&"user".to_string()));
+        
+        // Test scope extraction
+        assert_eq!(auth_context.scope, "admin");
+    }
+
+    #[tokio::test]
+    async fn test_job_status_tracking() {
+        // Test job status tracking
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::AntivirusScan {
+            repo_id: "test-repo".to_string(),
+            path: "test-file.txt".to_string(),
+            sha256: "test-hash".to_string(),
+        };
+
+        // Create job
+        let job_id = job_manager.enqueue_job(JobType::AntivirusScan, job_data).await.unwrap();
+        
+        // Test job status retrieval
+        let status = job_manager.get_job_status(&job_id).await.unwrap();
+        assert_eq!(status, JobStatus::Pending);
+        
+        // Test job completion
+        job_manager.mark_job_completed(&job_id).await.unwrap();
+        let completed_status = job_manager.get_job_status(&job_id).await.unwrap();
+        assert_eq!(completed_status, JobStatus::Completed);
+    }
+
+    #[tokio::test]
+    async fn test_job_error_handling() {
+        // Test job error handling
+        let storage_client = Arc::new(StorageClient::new("test-bucket"));
+        let index_client = Arc::new(IndexClient::from_pool(sqlx::PgPool::connect("postgresql://test").await.unwrap()));
+        
+        let job_manager = JobManager::new(
+            storage_client.clone(),
+            index_client.clone(),
+            None, // Redis storage
+            None, // Solr client
+        );
+
+        let job_data = JobData::AntivirusScan {
+            repo_id: "nonexistent-repo".to_string(),
+            path: "nonexistent-file.txt".to_string(),
+            sha256: "nonexistent-hash".to_string(),
+        };
+
+        // Create job that will fail
+        let job_id = job_manager.enqueue_job(JobType::AntivirusScan, job_data).await.unwrap();
+        
+        // Test job failure handling
+        job_manager.mark_job_failed(&job_id, "File not found").await.unwrap();
+        let failed_status = job_manager.get_job_status(&job_id).await.unwrap();
+        assert_eq!(failed_status, JobStatus::Failed);
+    }
+}

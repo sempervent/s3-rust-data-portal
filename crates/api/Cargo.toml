@@ -58,3 +58,7 @@ tower-sessions-memory-store = { workspace = true }
 hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
+aws-config = "1.1"
+aws-sdk-s3 = "1.14"
+tar = "0.4"
+flate2 = "1.0"

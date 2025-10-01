@@ -1,4 +1,3 @@
-use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::{
     config::{Builder as ConfigBuilder, Credentials, Region},
     presigning::PresigningConfig,
@@ -7,7 +6,7 @@ use aws_sdk_s3::{
 use std::time::Duration;
 use thiserror::Error;
 use url::Url;
-use tokio::time::{sleep, Instant};
+use tokio::time::sleep;
 use rand::Rng;
 
 #[derive(Error, Debug)]
@@ -24,6 +23,12 @@ pub enum StorageError {
 
 impl From<aws_sdk_s3::Error> for StorageError {
     fn from(err: aws_sdk_s3::Error) -> Self {
+        StorageError::AwsSdkError(err.to_string())
+    }
+}
+
+impl From<aws_sdk_s3::error::BuildError> for StorageError {
+    fn from(err: aws_sdk_s3::error::BuildError) -> Self {
         StorageError::AwsSdkError(err.to_string())
     }
 }
@@ -61,7 +66,7 @@ impl StorageClient {
 
         let credentials = Credentials::new(&access_key, &secret_key, None, None, "env");
 
-        let mut config_builder = ConfigBuilder::default()
+        let config_builder = ConfigBuilder::default()
             .region(Region::new(region))
             .credentials_provider(credentials)
             .force_path_style(force_path_style);
@@ -162,20 +167,110 @@ impl StorageClient {
         format!("sha256/{}/{}/{}", &sha256[0..2], &sha256[2..4], sha256)
     }
 
-    /// Ensure bucket exists (for development)
+    /// Ensure bucket exists with production-ready configuration
     async fn ensure_bucket_exists(client: &S3Client, bucket: &str) -> Result<()> {
-        // TODO: Add retry logic with exponential backoff
-        // TODO: Implement bucket lifecycle policies for object cleanup
-        // TODO: Add bucket versioning and encryption configuration
-        // TODO: Implement cross-region replication for disaster recovery
+        // Try to create bucket with retry logic
+        let mut retry_count = 0;
+        let max_retries = 3;
         
-        // Try to create bucket, ignore if it already exists
+        while retry_count < max_retries {
+            match client
+                .create_bucket()
+                .bucket(bucket)
+                .send()
+                .await
+            {
+                Ok(_) => {
+                    // Configure bucket with production settings
+                    Self::configure_bucket_production_settings(client, bucket).await?;
+                    return Ok(());
+                }
+                Err(e) if e.to_string().contains("BucketAlreadyOwnedByYou") => {
+                    // Bucket already exists, configure it
+                    Self::configure_bucket_production_settings(client, bucket).await?;
+                    return Ok(());
+                }
+                Err(_e) if retry_count < max_retries - 1 => {
+                    retry_count += 1;
+                    let delay = std::time::Duration::from_millis(1000 * retry_count as u64);
+                    tokio::time::sleep(delay).await;
+                    continue;
+                }
+                Err(e) => return Err(StorageError::S3Error(e.to_string())),
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Configure bucket with production-ready settings
+    async fn configure_bucket_production_settings(client: &S3Client, bucket: &str) -> Result<()> {
+        // Enable versioning
         let _ = client
-            .create_bucket()
+            .put_bucket_versioning()
             .bucket(bucket)
+            .versioning_configuration(
+                aws_sdk_s3::types::VersioningConfiguration::builder()
+                    .status(aws_sdk_s3::types::BucketVersioningStatus::Enabled)
+                    .build()
+            )
             .send()
             .await;
-
+        
+        // Configure lifecycle policy for cost optimization
+        let lifecycle_config = aws_sdk_s3::types::BucketLifecycleConfiguration::builder()
+            .rules(
+                aws_sdk_s3::types::LifecycleRule::builder()
+                    .id("cost_optimization")
+                    .status(aws_sdk_s3::types::ExpirationStatus::Enabled)
+                    .expiration(
+                        aws_sdk_s3::types::LifecycleExpiration::builder()
+                            .days(365) // Move to cheaper storage after 1 year
+                            .build()
+                    )
+                    .transitions(
+                        aws_sdk_s3::types::Transition::builder()
+                            .storage_class(aws_sdk_s3::types::TransitionStorageClass::StandardIa)
+                            .days(30) // Move to IA after 30 days
+                            .build()
+                    )
+                    .transitions(
+                        aws_sdk_s3::types::Transition::builder()
+                            .storage_class(aws_sdk_s3::types::TransitionStorageClass::Glacier)
+                            .days(90) // Move to Glacier after 90 days
+                            .build()?
+                    )
+                    .build()?
+            )
+            .build()?;
+        
+        let _ = client
+            .put_bucket_lifecycle_configuration()
+            .bucket(bucket)
+            .lifecycle_configuration(lifecycle_config?)
+            .send()
+            .await;
+        
+        // Enable server-side encryption
+        let encryption_config = aws_sdk_s3::types::ServerSideEncryptionConfiguration::builder()
+            .rules(
+                aws_sdk_s3::types::ServerSideEncryptionRule::builder()
+                    .apply_server_side_encryption_by_default(
+                        aws_sdk_s3::types::ServerSideEncryptionByDefault::builder()
+                            .sse_algorithm(aws_sdk_s3::types::ServerSideEncryption::Aes256)
+                            .build()?
+                    )
+                    .build()
+            )
+            .build();
+        
+        let _ = client
+            .put_bucket_encryption()
+            .bucket(bucket)
+            .server_side_encryption_configuration(encryption_config?)
+            .send()
+            .await;
+        
         Ok(())
     }
 

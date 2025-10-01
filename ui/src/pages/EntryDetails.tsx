@@ -83,16 +83,68 @@ const EntryDetails: React.FC = () => {
            fileType.includes('parquet')
   }
 
-  const handleDownload = () => {
-    // TODO: Implement download via presigned URL
-    addToast('Download functionality will be implemented', 'info')
+  const handleDownload = async () => {
+    // Implement download via presigned URL
+    try {
+      const response = await fetch(`/api/v1/repos/${entry?.repo}/refs/${entry?.ref}/blobs/${entry?.path}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`)
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = entry?.path.split('/').pop() || 'download'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      addToast('Download started successfully', 'success')
+    } catch (error) {
+      console.error('Download failed:', error)
+      addToast('Download failed. Please try again.', 'error')
+    }
   }
 
-  const handleMetadataSave = () => {
-    // TODO: Implement metadata update via API
-    console.log('Saving metadata:', metadataChanges)
-    addToast('Metadata saved successfully', 'success')
-    setIsMetadataEditing(false)
+  const handleMetadataSave = async () => {
+    // Implement metadata update via API
+    try {
+      const response = await fetch(`/api/v1/repos/${entry?.repo}/refs/${entry?.ref}/blobs/${entry?.path}/metadata`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(metadataChanges)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Metadata update failed: ${response.status}`)
+      }
+      
+      const updatedEntry = await response.json()
+      
+      // Update local state with the response
+      if (updatedEntry) {
+        setEntry(updatedEntry)
+        setMetadataChanges({})
+      }
+      
+      addToast('Metadata saved successfully', 'success')
+      setIsMetadataEditing(false)
+    } catch (error) {
+      console.error('Metadata update failed:', error)
+      addToast('Failed to save metadata. Please try again.', 'error')
+    }
   }
 
   const handleCopyS3Key = () => {

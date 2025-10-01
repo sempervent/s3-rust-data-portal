@@ -4,6 +4,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
 
 /// External data source entry
@@ -134,7 +135,7 @@ pub enum ConnectorError {
 #[async_trait]
 pub trait ConnectorFactory: Send + Sync {
     /// Create a connector from configuration
-    async fn create_connector(&self, config: ConnectorConfig) -> Result<Box<dyn Connector>, ConnectorError>;
+    async fn create_connector(&self, config: ConnectorConfig) -> Result<Arc<dyn Connector>, ConnectorError>;
     
     /// Get supported connector types
     fn supported_types(&self) -> Vec<ConnectorType>;
@@ -150,7 +151,7 @@ pub trait ConnectorRegistry: Send + Sync {
     async fn unregister_connector(&self, id: Uuid) -> Result<(), ConnectorError>;
     
     /// Get connector by ID
-    async fn get_connector(&self, id: Uuid) -> Result<Option<Box<dyn Connector>>, ConnectorError>;
+    async fn get_connector(&self, id: Uuid) -> Result<Option<Arc<dyn Connector>>, ConnectorError>;
     
     /// List all registered connectors
     async fn list_connectors(&self) -> Result<Vec<ConnectorStatus>, ConnectorError>;

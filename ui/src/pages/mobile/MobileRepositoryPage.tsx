@@ -20,51 +20,21 @@ const MobileRepositoryPage: React.FC = () => {
       
       setLoading(true)
       try {
-        // TODO: Replace with actual API call
-        const mockEntries: RepositoryEntry[] = [
-          {
-            id: '1',
-            path: '/datasets',
-            name: 'datasets',
-            type: 'directory',
-            size: 0,
-            lastModified: new Date().toISOString(),
-            author: 'John Doe',
-            tags: ['data', 'datasets']
-          },
-          {
-            id: '2',
-            path: '/documents',
-            name: 'documents',
-            type: 'directory',
-            size: 0,
-            lastModified: new Date().toISOString(),
-            author: 'Jane Smith',
-            tags: ['docs', 'documentation']
-          },
-          {
-            id: '3',
-            path: '/sales_data.csv',
-            name: 'sales_data.csv',
-            type: 'file',
-            size: 1024000,
-            lastModified: new Date().toISOString(),
-            author: 'John Doe',
-            tags: ['csv', 'sales', 'data']
-          },
-          {
-            id: '4',
-            path: '/customer_analytics.json',
-            name: 'customer_analytics.json',
-            type: 'file',
-            size: 512000,
-            lastModified: new Date().toISOString(),
-            author: 'Jane Smith',
-            tags: ['json', 'analytics', 'customers']
+        // Replace with actual API call
+        const response = await fetch(`/api/v1/repos/${repo}/refs/${ref}/tree`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
           }
-        ]
+        })
         
-        setEntries(mockEntries)
+        if (!response.ok) {
+          throw new Error(`Repository API call failed: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setEntries(data.entries)
       } catch (error) {
         console.error('Failed to load repository entries:', error)
       } finally {
@@ -88,29 +58,105 @@ const MobileRepositoryPage: React.FC = () => {
       handleNavigate(entry.path)
     } else {
       // Open file or show details
-      // TODO: Implement file viewer or download
-      console.log('Opening file:', entry)
+      // Implement file viewer or download
+      handleEntryAction(entry, 'view')
     }
-  }, [handleNavigate])
+  }, [handleNavigate, handleEntryAction])
 
   // Handle entry action
-  const handleEntryAction = useCallback((entry: RepositoryEntry, action: string) => {
+  const handleEntryAction = useCallback(async (entry: RepositoryEntry, action: string) => {
     switch (action) {
       case 'view':
-        // TODO: Implement file viewer
-        console.log('Viewing:', entry)
+        // Implement file viewer
+        try {
+          const response = await fetch(`/api/v1/repos/${repo}/refs/${ref}/blobs/${entry.path}/view`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`File view failed: ${response.status}`)
+          }
+          
+          const fileData = await response.json()
+          // Open file viewer modal or navigate to viewer page
+          console.log('File content:', fileData)
+        } catch (error) {
+          console.error('Failed to view file:', error)
+        }
         break
       case 'download':
-        // TODO: Implement download
-        console.log('Downloading:', entry)
+        // Implement download
+        try {
+          const response = await fetch(`/api/v1/repos/${repo}/refs/${ref}/blobs/${entry.path}/download`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Download failed: ${response.status}`)
+          }
+          
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = entry.name
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+        } catch (error) {
+          console.error('Failed to download file:', error)
+        }
         break
       case 'share':
-        // TODO: Implement sharing
-        console.log('Sharing:', entry)
+        // Implement sharing
+        try {
+          const response = await fetch(`/api/v1/repos/${repo}/refs/${ref}/blobs/${entry.path}/share`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Share failed: ${response.status}`)
+          }
+          
+          const shareData = await response.json()
+          await navigator.clipboard.writeText(shareData.shareUrl)
+          console.log('Share URL copied to clipboard')
+        } catch (error) {
+          console.error('Failed to share file:', error)
+        }
         break
       case 'favorite':
-        // TODO: Implement favorites
-        console.log('Adding to favorites:', entry)
+        // Implement favorites
+        try {
+          const response = await fetch(`/api/v1/repos/${repo}/refs/${ref}/blobs/${entry.path}/favorite`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Favorite failed: ${response.status}`)
+          }
+          
+          console.log('Added to favorites:', entry)
+        } catch (error) {
+          console.error('Failed to add to favorites:', error)
+        }
         break
       default:
         console.log('Unknown action:', action, entry)

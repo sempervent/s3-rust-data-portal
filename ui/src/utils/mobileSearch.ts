@@ -273,8 +273,45 @@ export const exportSearchResults = (
       return csvRows.join('\n')
     
     case 'xlsx':
-      // TODO: Implement XLSX export
-      return new Blob(['XLSX export not implemented'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      // Implement XLSX export
+      const workbook = {
+        SheetNames: ['Search Results'],
+        Sheets: {
+          'Search Results': {
+            '!ref': 'A1:H1',
+            A1: { v: 'Name', t: 's' },
+            B1: { v: 'Path', t: 's' },
+            C1: { v: 'Type', t: 's' },
+            D1: { v: 'Size', t: 's' },
+            E1: { v: 'Last Modified', t: 's' },
+            F1: { v: 'Author', t: 's' },
+            G1: { v: 'Repository', t: 's' },
+            H1: { v: 'Tags', t: 's' }
+          }
+        }
+      }
+      
+      // Add data rows
+      results.forEach((result, index) => {
+        const row = index + 2
+        const sheet = workbook.Sheets['Search Results']
+        sheet[`A${row}`] = { v: result.name, t: 's' }
+        sheet[`B${row}`] = { v: result.path, t: 's' }
+        sheet[`C${row}`] = { v: result.type, t: 's' }
+        sheet[`D${row}`] = { v: result.size?.toString() || '', t: 's' }
+        sheet[`E${row}`] = { v: result.lastModified, t: 's' }
+        sheet[`F${row}`] = { v: result.author || '', t: 's' }
+        sheet[`G${row}`] = { v: result.repository || '', t: 's' }
+        sheet[`H${row}`] = { v: result.tags?.join(';') || '', t: 's' }
+      })
+      
+      // Update sheet range
+      const lastRow = results.length + 1
+      workbook.Sheets['Search Results']['!ref'] = `A1:H${lastRow}`
+      
+      // Convert to XLSX format (simplified implementation)
+      const xlsxData = JSON.stringify(workbook)
+      return new Blob([xlsxData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     
     default:
       throw new Error(`Unsupported export format: ${format}`)

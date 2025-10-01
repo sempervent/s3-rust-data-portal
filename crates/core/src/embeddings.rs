@@ -251,7 +251,7 @@ impl EmbeddingService for MockEmbeddingService {
         })
     }
     
-    async fn extract_suggested_tags(&self, text: &str) -> Result<SuggestedTags, EmbeddingError> {
+    async fn extract_suggested_tags(&self, _text: &str) -> Result<SuggestedTags, EmbeddingError> {
         let start_time = std::time::Instant::now();
         
         // Mock NER processing - in production, this would use a real NER model

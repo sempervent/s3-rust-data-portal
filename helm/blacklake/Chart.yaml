@@ -1,0 +1,38 @@
+apiVersion: v2
+name: blacklake
+description: A Helm chart for BlackLake Data Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://github.com/your-org/blacklake
+sources:
+  - https://github.com/your-org/blacklake
+maintainers:
+  - name: BlackLake Team
+    email: team@blacklake.dev
+keywords:
+  - data-platform
+  - machine-learning
+  - data-versioning
+  - metadata
+  - search
+annotations:
+  category: Data & Analytics
+  licenses: Apache-2.0
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: solr
+    version: "0.1.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: solr.enabled
+  - name: minio
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: minio.enabled

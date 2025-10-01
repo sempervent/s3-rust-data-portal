@@ -1,0 +1,60 @@
+flowchart TD
+    A[Policy Evaluation Request] --> B{Authentication Valid?}
+    B -->|No| C[Return 401 Unauthorized]
+    B -->|Yes| D{User Has Permission?}
+    
+    D -->|No| E[Return 403 Forbidden]
+    D -->|Yes| F{Resource Exists?}
+    
+    F -->|No| G[Return 404 Not Found]
+    F -->|Yes| H{Check Retention Policy}
+    
+    H --> I{Object Age > Retention Period?}
+    I -->|Yes| J[Mark for Deletion]
+    I -->|No| K{Check Legal Hold}
+    
+    K --> L{Object Under Legal Hold?}
+    L -->|Yes| M[Protect from Deletion]
+    L -->|No| N{Check Access Policy}
+    
+    N --> O{User Role Allowed?}
+    O -->|No| P[Return 403 Forbidden]
+    O -->|Yes| Q{Check Rate Limits}
+    
+    Q --> R{Rate Limit Exceeded?}
+    R -->|Yes| S[Return 429 Too Many Requests]
+    R -->|No| T{Check Budget Limits}
+    
+    T --> U{Budget Exceeded?}
+    U -->|Yes| V[Return 402 Payment Required]
+    U -->|No| W{Check Geographic Restrictions}
+    
+    W --> X{Location Allowed?}
+    X -->|No| Y[Return 403 Forbidden]
+    X -->|Yes| Z{Check Time Restrictions}
+    
+    Z --> AA{Time Window Valid?}
+    AA -->|No| BB[Return 403 Forbidden]
+    AA -->|Yes| CC[Allow Access]
+    
+    CC --> DD[Log Access Event]
+    DD --> EE[Update Usage Metrics]
+    EE --> FF[Return Success Response]
+    
+    J --> GG[Schedule Deletion Job]
+    M --> HH[Skip Deletion]
+    
+    GG --> II[Log Policy Action]
+    HH --> II
+    II --> JJ[Return Policy Decision]
+    
+    %% Styling
+    classDef decision fill:#e1f5fe
+    classDef action fill:#f3e5f5
+    classDef error fill:#ffebee
+    classDef success fill:#e8f5e8
+    
+    class B,D,F,I,L,O,R,U,X,AA decision
+    class J,M,GG,HH,DD,EE,II action
+    class C,E,G,P,S,V,Y,BB error
+    class CC,FF,JJ success

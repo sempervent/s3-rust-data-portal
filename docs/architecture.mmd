@@ -1,0 +1,113 @@
+graph TB
+    subgraph "External Users"
+        U1[Data Scientists]
+        U2[ML Engineers]
+        U3[Data Engineers]
+        U4[System Administrators]
+    end
+
+    subgraph "BlackLake Platform"
+        subgraph "API Gateway"
+            GW[Load Balancer]
+            AUTH[Authentication Service]
+            RATE[Rate Limiter]
+        end
+
+        subgraph "Core Services"
+            API[Rust API Server]
+            CLI[CLI Tool]
+            UI[React Web UI]
+            MOBILE[Mobile UI]
+        end
+
+        subgraph "Data Layer"
+            DB[(PostgreSQL)]
+            REDIS[(Redis Cache)]
+            SOLR[(Apache Solr)]
+        end
+
+        subgraph "Storage Layer"
+            S3[S3-Compatible Storage]
+            MINIO[MinIO]
+        end
+
+        subgraph "Job Processing"
+            JOB[Apalis Job Processor]
+            QUEUE[Redis Queue]
+            WORKER[Background Workers]
+        end
+
+        subgraph "Monitoring & Observability"
+            METRICS[Prometheus]
+            LOGS[Grafana]
+            TRACE[Jaeger]
+        end
+    end
+
+    subgraph "External Services"
+        OIDC[OIDC Provider]
+        EMAIL[Email Service]
+        WEBHOOK[Webhook Endpoints]
+    end
+
+    %% User connections
+    U1 --> GW
+    U2 --> GW
+    U3 --> GW
+    U4 --> GW
+
+    %% Gateway connections
+    GW --> AUTH
+    GW --> RATE
+    GW --> API
+
+    %% Authentication
+    AUTH --> OIDC
+
+    %% API connections
+    API --> DB
+    API --> REDIS
+    API --> SOLR
+    API --> S3
+    API --> JOB
+
+    %% CLI connections
+    CLI --> API
+
+    %% UI connections
+    UI --> API
+    MOBILE --> API
+
+    %% Job processing
+    JOB --> QUEUE
+    JOB --> WORKER
+    WORKER --> DB
+    WORKER --> SOLR
+    WORKER --> S3
+
+    %% Storage
+    S3 --> MINIO
+
+    %% Monitoring
+    API --> METRICS
+    DB --> METRICS
+    REDIS --> METRICS
+    SOLR --> METRICS
+    METRICS --> LOGS
+
+    %% External integrations
+    API --> EMAIL
+    API --> WEBHOOK
+
+    %% Styling
+    classDef userClass fill:#e1f5fe
+    classDef serviceClass fill:#f3e5f5
+    classDef dataClass fill:#e8f5e8
+    classDef storageClass fill:#fff3e0
+    classDef externalClass fill:#ffebee
+
+    class U1,U2,U3,U4 userClass
+    class API,CLI,UI,MOBILE,JOB,WORKER serviceClass
+    class DB,REDIS,SOLR dataClass
+    class S3,MINIO storageClass
+    class OIDC,EMAIL,WEBHOOK externalClass

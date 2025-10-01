@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useMobileSearchStore } from '@/stores/mobileSearch'
 import { SearchResult, SearchQuery, SearchResponse } from '@/types/mobileSearch'
+import { mobileSearchApi } from '@/services/mobileSearchApi'
 
 // Hook for search functionality
 export const useSearch = () => {
@@ -199,28 +200,23 @@ export const useSearchSuggestions = () => {
 
     setLoading(true)
     try {
-      // TODO: Implement actual suggestions API call
-      // For now, return mock suggestions
-      const mockSuggestions = [
-        `${query} data`,
-        `${query} analysis`,
-        `${query} report`,
-        `${query} metrics`
-      ]
+      // Implement actual suggestions API call
+      const response = await mobileSearchApi.getSuggestions({
+        query: query.trim(),
+        limit: 10
+      })
 
-      const mockTags = [
-        'analytics',
-        'data',
-        'report',
-        'metrics'
-      ]
-
-      setSuggestions(mockSuggestions)
-      setTags(mockTags)
-      setSearchSuggestions(mockSuggestions)
-      setSuggestedTags(mockTags)
+      setSuggestions(response.suggestions)
+      setTags(response.tags)
+      setSearchSuggestions(response.suggestions)
+      setSuggestedTags(response.tags)
     } catch (error) {
       console.error('Failed to fetch suggestions:', error)
+      // Fallback to empty suggestions on error
+      setSuggestions([])
+      setTags([])
+      setSearchSuggestions([])
+      setSuggestedTags([])
     } finally {
       setLoading(false)
     }
@@ -306,22 +302,22 @@ export const useSearchPerformance = () => {
   const fetchPerformance = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: Implement actual performance API call
-      // For now, return mock performance data
-      const mockPerformance = {
-        averageResponseTime: 150,
-        p95ResponseTime: 300,
-        p99ResponseTime: 500,
-        throughput: 1000,
-        errorRate: 0.01,
-        cacheHitRate: 0.85,
-        indexSize: 1024 * 1024 * 1024, // 1GB
-        queryComplexity: 0.7,
-        memoryUsage: 0.6,
-        cpuUsage: 0.4
+      // Implement actual performance API call
+      const response = await fetch('/api/v1/performance/metrics', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Performance API call failed: ${response.status}`)
       }
+      
+      const performanceData = await response.json()
 
-      setPerformance(mockPerformance)
+      setPerformance(performanceData)
     } catch (error) {
       console.error('Failed to fetch performance data:', error)
     } finally {
@@ -355,26 +351,22 @@ export const useSearchAlerts = () => {
   const fetchAlerts = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: Implement actual alerts API call
-      // For now, return mock alerts
-      const mockAlerts = [
-        {
-          id: '1',
-          type: 'warning' as const,
-          message: 'High response time detected',
-          timestamp: new Date().toISOString(),
-          resolved: false
-        },
-        {
-          id: '2',
-          type: 'info' as const,
-          message: 'Search index updated successfully',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          resolved: true
+      // Implement actual alerts API call
+      const response = await fetch('/api/v1/alerts', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
-      ]
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Alerts API call failed: ${response.status}`)
+      }
+      
+      const alertsData = await response.json()
 
-      setAlerts(mockAlerts)
+      setAlerts(alertsData)
     } catch (error) {
       console.error('Failed to fetch alerts:', error)
     } finally {
@@ -400,17 +392,42 @@ export const useSearchExport = () => {
   const exportResults = useCallback(async (format: 'json' | 'csv' | 'xlsx' | 'pdf') => {
     setExporting(true)
     try {
-      // TODO: Implement actual export functionality
-      // For now, just simulate export
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Implement actual export functionality
+      const response = await fetch('/api/v1/export/search-results', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          format,
+          query: searchQuery,
+          filters: activeFilters,
+          limit: 1000
+        })
+      })
       
-      console.log(`Exporting results in ${format} format`)
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.status}`)
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `search-results.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      console.log(`Export completed in ${format} format`)
     } catch (error) {
       console.error('Export failed:', error)
     } finally {
       setExporting(false)
     }
-  }, [])
+  }, [searchQuery, activeFilters])
 
   return {
     exporting,
@@ -425,17 +442,49 @@ export const useSearchShare = () => {
   const shareResults = useCallback(async (platform: 'email' | 'social' | 'link') => {
     setSharing(true)
     try {
-      // TODO: Implement actual sharing functionality
-      // For now, just simulate sharing
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Implement actual sharing functionality
+      const response = await fetch('/api/v1/share/search-results', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          platform,
+          query: searchQuery,
+          filters: activeFilters,
+          results: searchResults
+        })
+      })
       
-      console.log(`Sharing results via ${platform}`)
+      if (!response.ok) {
+        throw new Error(`Sharing failed: ${response.status}`)
+      }
+      
+      const shareData = await response.json()
+      
+      if (platform === 'link') {
+        // Copy shareable link to clipboard
+        await navigator.clipboard.writeText(shareData.shareUrl)
+        console.log('Shareable link copied to clipboard')
+      } else if (platform === 'email') {
+        // Open email client with pre-filled content
+        const subject = encodeURIComponent('Shared Search Results from BlackLake')
+        const body = encodeURIComponent(`Check out these search results: ${shareData.shareUrl}`)
+        window.open(`mailto:?subject=${subject}&body=${body}`)
+      } else if (platform === 'social') {
+        // Open social media sharing
+        const text = encodeURIComponent(`Check out these search results from BlackLake: ${shareData.shareUrl}`)
+        window.open(`https://twitter.com/intent/tweet?text=${text}`)
+      }
+      
+      console.log(`Sharing completed via ${platform}`)
     } catch (error) {
       console.error('Sharing failed:', error)
     } finally {
       setSharing(false)
     }
-  }, [])
+  }, [searchQuery, activeFilters, searchResults])
 
   return {
     sharing,
@@ -462,23 +511,21 @@ export const useSearchBookmarks = () => {
   const fetchBookmarks = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: Implement actual bookmarks API call
-      // For now, return mock bookmarks
-      const mockBookmarks = [
-        {
-          id: '1',
-          name: 'Customer Data Search',
-          query: 'customer data',
-          filters: { fileType: ['csv'] },
-          sort: 'relevance',
-          description: 'Search for customer data files',
-          tags: ['customers', 'data'],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+      // Implement actual bookmarks API call
+      const response = await fetch('/api/v1/bookmarks', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
-      ]
-
-      setBookmarks(mockBookmarks)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Bookmarks API call failed: ${response.status}`)
+      }
+      
+      const bookmarksData = await response.json()
+      setBookmarks(bookmarksData)
     } catch (error) {
       console.error('Failed to fetch bookmarks:', error)
     } finally {
@@ -495,14 +542,21 @@ export const useSearchBookmarks = () => {
     tags?: string[]
   }) => {
     try {
-      // TODO: Implement actual bookmark creation
-      const newBookmark = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...bookmark,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      // Implement actual bookmark creation
+      const response = await fetch('/api/v1/bookmarks', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookmark)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Bookmark creation failed: ${response.status}`)
       }
-
+      
+      const newBookmark = await response.json()
       setBookmarks(prev => [newBookmark, ...prev])
     } catch (error) {
       console.error('Failed to add bookmark:', error)
@@ -511,7 +565,19 @@ export const useSearchBookmarks = () => {
 
   const removeBookmark = useCallback(async (id: string) => {
     try {
-      // TODO: Implement actual bookmark deletion
+      // Implement actual bookmark deletion
+      const response = await fetch(`/api/v1/bookmarks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Bookmark deletion failed: ${response.status}`)
+      }
+      
       setBookmarks(prev => prev.filter(b => b.id !== id))
     } catch (error) {
       console.error('Failed to remove bookmark:', error)
@@ -550,21 +616,21 @@ export const useSearchNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: Implement actual notifications API call
-      // For now, return mock notifications
-      const mockNotifications = [
-        {
-          id: '1',
-          type: 'new_results' as const,
-          title: 'New Results Available',
-          message: 'New results found for your saved search "customer data"',
-          query: 'customer data',
-          timestamp: new Date().toISOString(),
-          read: false
+      // Implement actual notifications API call
+      const response = await fetch('/api/v1/notifications', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
-      ]
-
-      setNotifications(mockNotifications)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Notifications API call failed: ${response.status}`)
+      }
+      
+      const notificationsData = await response.json()
+      setNotifications(notificationsData)
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
     } finally {
@@ -574,7 +640,19 @@ export const useSearchNotifications = () => {
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      // TODO: Implement actual notification read status update
+      // Implement actual notification read status update
+      const response = await fetch(`/api/v1/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Notification read update failed: ${response.status}`)
+      }
+      
       setNotifications(prev => prev.map(n => 
         n.id === id ? { ...n, read: true } : n
       ))
@@ -585,7 +663,19 @@ export const useSearchNotifications = () => {
 
   const markAllAsRead = useCallback(async () => {
     try {
-      // TODO: Implement actual bulk notification read status update
+      // Implement actual bulk notification read status update
+      const response = await fetch('/api/v1/notifications/read-all', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Bulk notification read update failed: ${response.status}`)
+      }
+      
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error)
@@ -635,32 +725,21 @@ export const useSearchContext = () => {
   const fetchContext = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: Implement actual context API call
-      // For now, return mock context
-      const mockContext = {
-        user: {
-          id: 'user-123',
-          name: 'John Doe',
-          email: 'john@example.com',
-          role: 'user',
-          permissions: ['read', 'search']
-        },
-        session: {
-          id: 'session-456',
-          startTime: new Date().toISOString(),
-          lastActivity: new Date().toISOString(),
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0...'
-        },
-        environment: {
-          version: '1.0.0',
-          build: '123',
-          environment: 'production' as const,
-          features: ['semantic_search', 'filters', 'export']
+      // Implement actual context API call
+      const response = await fetch('/api/v1/context', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Context API call failed: ${response.status}`)
       }
-
-      setContext(mockContext)
+      
+      const contextData = await response.json()
+      setContext(contextData)
     } catch (error) {
       console.error('Failed to fetch context:', error)
     } finally {

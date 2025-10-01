@@ -11,6 +11,42 @@ use similar::{ChangeTag, TextDiff};
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
+use jsonwebtoken::{decode, DecodingKey, Validation};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct OidcClaims {
+    sub: String,
+    email: Option<String>,
+    email_verified: Option<bool>,
+    name: Option<String>,
+    exp: usize,
+    iat: usize,
+}
+
+/// Get user email from OIDC token
+fn get_user_email_from_oidc_token() -> Result<String> {
+    // Get token from environment or config
+    let token = std::env::var("BLACKLAKE_TOKEN")
+        .or_else(|_| std::env::var("OIDC_TOKEN"))
+        .map_err(|_| anyhow!("No OIDC token found in environment"))?;
+    
+    // Decode JWT token
+    let jwt_secret = std::env::var("JWT_SECRET")
+        .unwrap_or_else(|_| "your-jwt-secret-key".to_string());
+    
+    let decoding_key = DecodingKey::from_secret(jwt_secret.as_ref());
+    let validation = Validation::default();
+    
+    let token_data = decode::<OidcClaims>(&token, &decoding_key, &validation)
+        .map_err(|e| anyhow!("Failed to decode OIDC token: {}", e))?;
+    
+    let claims = token_data.claims;
+    
+    // Extract email from claims
+    claims.email
+        .ok_or_else(|| anyhow!("No email found in OIDC token"))
+}
 // Remove BlackLakeMetadata import - it doesn't exist in the new init module
 
 #[derive(Args)]
@@ -122,7 +158,7 @@ pub async fn put_command(args: PutArgs, api_client: &ApiClient) -> Result<()> {
             file_path: args.path.clone(),
             file_size,
             mime_type,
-            user_email: None, // TODO: Get from OIDC token
+            user_email: get_user_email_from_oidc_token().ok(), // Get from OIDC token
             template: None,
         })?
     };

@@ -202,7 +202,9 @@ export const MobileJobDock: React.FC<MobileJobDockProps> = ({ className = '' }) 
                       {job.status === 'completed' && (
                         <button
                           onClick={() => {
-                            // TODO: View job details
+                            // View job details
+                            setSelectedJob(job)
+                            setShowDetails(true)
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                           title="View details"

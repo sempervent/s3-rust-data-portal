@@ -57,9 +57,44 @@ export const ModelCard: React.FC<ModelCardProps> = ({
     }
   }
 
-  const handleValidateModel = () => {
-    // TODO: Implement model validation endpoint call
-    console.log('Validating model:', fileName)
+  const handleValidateModel = async () => {
+    // Implement model validation endpoint call
+    try {
+      const response = await fetch('/api/v1/models/validate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName,
+          filePath: modelInfo?.path,
+          fileSize: modelInfo?.size,
+          framework: modelInfo?.framework,
+          opset: modelInfo?.opset
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Model validation failed: ${response.status}`)
+      }
+      
+      const validationResult = await response.json()
+      
+      // Update model info with validation results
+      if (setModelInfo) {
+        setModelInfo(prev => ({
+          ...prev,
+          validationStatus: validationResult.status,
+          validationResults: validationResult.results,
+          lastValidated: new Date().toISOString()
+        }))
+      }
+      
+      console.log('Model validation completed:', validationResult)
+    } catch (error) {
+      console.error('Failed to validate model:', error)
+    }
   }
 
   return (

@@ -4,6 +4,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { SearchResult } from '@/types/search'
+import { mobileSearchApi } from '@/services/mobileSearchApi'
 
 interface SearchState {
   // Search state
@@ -284,38 +285,18 @@ export const useMobileSearchStore = create<SearchStore>()(
             1
           )
           
-          // TODO: Implement actual search API call
-          // For now, return mock results
-          const mockResults: SearchResult[] = [
-            {
-              id: '1',
-              name: 'customer_data.csv',
-              path: '/datasets/customer_data.csv',
-              description: 'Customer information and analytics data',
-              type: 'file',
-              size: 1024000,
-              lastModified: new Date().toISOString(),
-              author: 'John Doe',
-              tags: ['customers', 'analytics', 'data'],
-              repository: 'main'
-            },
-            {
-              id: '2',
-              name: 'sales_report.pdf',
-              path: '/reports/sales_report.pdf',
-              description: 'Monthly sales performance report',
-              type: 'file',
-              size: 512000,
-              lastModified: new Date().toISOString(),
-              author: 'Jane Smith',
-              tags: ['sales', 'report', 'performance'],
-              repository: 'main'
-            }
-          ]
+          // Implement actual search API call
+          const response = await mobileSearchApi.search({
+            query: query.trim(),
+            filters: get().filters,
+            sort: get().sort,
+            limit: 20,
+            offset: 0
+          })
           
           set({
-            results: mockResults,
-            totalCount: mockResults.length,
+            results: response.results,
+            totalCount: response.total,
             loading: false
           })
         } catch (error) {
@@ -334,28 +315,18 @@ export const useMobileSearchStore = create<SearchStore>()(
         set({ loading: true })
         
         try {
-          // TODO: Implement pagination
-          // For now, just simulate loading more results
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          // Mock additional results
-          const additionalResults: SearchResult[] = [
-            {
-              id: `${state.results.length + 1}`,
-              name: `additional_file_${state.results.length + 1}.csv`,
-              path: `/datasets/additional_file_${state.results.length + 1}.csv`,
-              description: 'Additional search result',
-              type: 'file',
-              size: 256000,
-              lastModified: new Date().toISOString(),
-              author: 'System',
-              tags: ['additional', 'data'],
-              repository: 'main'
-            }
-          ]
+          // Implement pagination
+          const currentOffset = state.results.length
+          const response = await mobileSearchApi.search({
+            query: state.query,
+            filters: state.filters,
+            sort: state.sort,
+            limit: 20,
+            offset: currentOffset
+          })
           
           set({
-            results: [...state.results, ...additionalResults],
+            results: [...state.results, ...response.results],
             loading: false
           })
         } catch (error) {

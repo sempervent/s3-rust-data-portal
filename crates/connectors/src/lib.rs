@@ -7,5 +7,5 @@ pub mod postgres;
 pub mod ckan;
 pub mod manager;
 
-pub use traits::*;
-pub use manager::*;
+pub use traits::{Connector, ConnectorRegistry, ConnectorType, ConnectorConfig, ConnectorStatus, ConnectorError};
+pub use manager::ConnectorManager;
