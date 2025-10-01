@@ -217,4 +217,4 @@ docker-compose run --rm migrations
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [SQLx Migration Guide](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md)
-- [BlackLake CLI Documentation](./docs/cli.md)
+- [BlackLake CLI Documentation](cli.md)

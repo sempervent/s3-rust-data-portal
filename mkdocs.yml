@@ -141,6 +141,7 @@ nav:
     - getting-started.md
     - QUICK_START.md
     - local_testing.md
+    - MIGRATION_SETUP.md
   - Architecture & Design:
     - architecture.md
     - PROJECT_STATUS.md
@@ -161,6 +162,8 @@ nav:
   - Verification:
     - VERIFICATION.md
     - FAST_SETUP.md
+  - Development:
+    - TODO.md
 
 # Extra
 extra:
