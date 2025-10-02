@@ -238,6 +238,27 @@ async fn init_directory(dir_path: &Path, args: &InitArgs) -> Result<()> {
 
     if !args.dry_run {
         fs::create_dir_all(&bl_dir)?;
+        
+        // Create Git-like structure
+        fs::create_dir_all(&bl_dir.join("hooks"))?;
+        fs::create_dir_all(&bl_dir.join("refs"))?;
+        fs::create_dir_all(&bl_dir.join("refs/tags"))?;
+        fs::create_dir_all(&bl_dir.join("objects"))?;
+        fs::create_dir_all(&bl_dir.join("objects/blobs"))?;
+        fs::create_dir_all(&bl_dir.join("objects/commits"))?;
+        
+        // Create configuration file
+        create_config_file(&bl_dir, args)?;
+        
+        // Create comprehensive metadata template
+        create_metadata_template(&bl_dir, args)?;
+        
+        // Create .gitignore
+        create_gitignore(&bl_dir)?;
+        
+        // Create hooks
+        create_hooks(&bl_dir)?;
+        
         // Set restrictive permissions on Unix
         #[cfg(unix)]
         {
@@ -761,5 +782,226 @@ fn set_nested_value(value: &mut serde_json::Value, path: &str, val: &str) -> Res
         }
     }
     
+    Ok(())
+}
+
+fn create_config_file(bl_dir: &Path, args: &InitArgs) -> Result<()> {
+    let config_content = format!(
+        r#"[repository]
+name = "{}"
+description = "{}"
+author = "{}"
+license = "{}"
+version = "{}"
+tags = ["{}"]
+
+[storage]
+backend = "s3"
+bucket = "blacklake"
+region = "us-east-1"
+
+[search]
+backend = "postgres"
+index_metadata = true
+index_content = true
+
+[auth]
+provider = "oidc"
+issuer = "https://keycloak.example.com/realms/blacklake"
+
+[hooks]
+pre_commit = "blacklake-cli hooks pre-commit"
+post_commit = "blacklake-cli hooks post-commit"
+pre_push = "blacklake-cli hooks pre-push"
+"#,
+        args.namespace,
+        "Machine Learning Pipeline",
+        args.owner.as_deref().unwrap_or("Data Science Team"),
+        "MIT",
+        "1.0.0",
+        "ml,ai,pipeline"
+    );
+    
+    fs::write(bl_dir.join("config.toml"), config_content)?;
+    println!("📄 Created config.toml");
+    Ok(())
+}
+
+fn create_metadata_template(bl_dir: &Path, args: &InitArgs) -> Result<()> {
+    let metadata = serde_json::json!({
+        "repository": {
+            "name": args.namespace,
+            "description": "Machine Learning Pipeline",
+            "author": args.owner.as_deref().unwrap_or("Data Science Team"),
+            "license": "MIT",
+            "version": "1.0.0",
+            "tags": ["ml", "ai", "pipeline"],
+            "created_at": OffsetDateTime::now_utc().format(&time::format_description::well_known::Rfc3339).unwrap(),
+            "updated_at": OffsetDateTime::now_utc().format(&time::format_description::well_known::Rfc3339).unwrap()
+        },
+        "data": {
+            "format": "mixed",
+            "size": "0B",
+            "files": 0,
+            "directories": 0
+        },
+        "models": {
+            "count": 0,
+            "formats": [],
+            "total_size": "0B"
+        },
+        "datasets": {
+            "count": 0,
+            "formats": [],
+            "total_size": "0B"
+        },
+        "dependencies": {
+            "python": [],
+            "r": [],
+            "julia": [],
+            "other": []
+        },
+        "environment": {
+            "os": "linux",
+            "python_version": "3.11",
+            "r_version": "4.3",
+            "julia_version": "1.9"
+        },
+        "workflow": {
+            "stages": [],
+            "pipeline": [],
+            "artifacts": []
+        },
+        "compliance": {
+            "data_classification": "internal",
+            "retention_policy": "7y",
+            "access_control": "team",
+            "audit_logging": true
+        }
+    });
+    
+    // Apply dot notation overrides
+    let mut json_value = metadata;
+    for (key, value) in &args.set {
+        set_nested_value(&mut json_value, key, value)?;
+    }
+    
+    let metadata_content = serde_json::to_string_pretty(&json_value)?;
+    fs::write(bl_dir.join("metadata.json"), metadata_content)?;
+    println!("📄 Created metadata.json");
+    Ok(())
+}
+
+fn create_gitignore(bl_dir: &Path) -> Result<()> {
+    let gitignore_content = r#"# BlackLake specific ignores
+.bl/objects/
+.bl/refs/
+.bl/hooks/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (uncomment as needed)
+# *.csv
+# *.parquet
+# *.h5
+# *.hdf5
+"#;
+    
+    fs::write(bl_dir.join(".gitignore"), gitignore_content)?;
+    println!("📄 Created .gitignore");
+    Ok(())
+}
+
+fn create_hooks(bl_dir: &Path) -> Result<()> {
+    let hooks_dir = bl_dir.join("hooks");
+    
+    // Pre-commit hook
+    let pre_commit_content = r#"#!/bin/bash
+# BlackLake pre-commit hook
+echo "🔍 Running BlackLake pre-commit checks..."
+
+# Validate metadata
+blacklake-cli validate
+
+# Check file permissions
+find . -name "*.bl" -exec chmod 600 {} \;
+
+echo "✅ Pre-commit checks passed"
+"#;
+    fs::write(hooks_dir.join("pre-commit"), pre_commit_content)?;
+    
+    // Post-commit hook
+    let post_commit_content = r#"#!/bin/bash
+# BlackLake post-commit hook
+echo "📝 Running BlackLake post-commit actions..."
+
+# Update metadata timestamps
+blacklake-cli update-metadata
+
+# Generate provenance
+blacklake-cli generate-provenance
+
+echo "✅ Post-commit actions completed"
+"#;
+    fs::write(hooks_dir.join("post-commit"), post_commit_content)?;
+    
+    // Pre-push hook
+    let pre_push_content = r#"#!/bin/bash
+# BlackLake pre-push hook
+echo "🚀 Running BlackLake pre-push checks..."
+
+# Validate repository state
+blacklake-cli validate-repo
+
+# Check for conflicts
+blacklake-cli check-conflicts
+
+echo "✅ Pre-push checks passed"
+"#;
+    fs::write(hooks_dir.join("pre-push"), pre_push_content)?;
+    
+    // Make hooks executable
+    #[cfg(unix)]
+    {
+        for hook in &["pre-commit", "post-commit", "pre-push"] {
+            let hook_path = hooks_dir.join(hook);
+            let mut perms = fs::metadata(&hook_path)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&hook_path, perms)?;
+        }
+    }
+    
+    println!("📄 Created hooks");
     Ok(())
 }

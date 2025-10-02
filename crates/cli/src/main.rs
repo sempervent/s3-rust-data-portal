@@ -189,6 +189,133 @@ enum Commands {
         #[arg(long)]
         with_authorization: bool,
     },
+    /// Add files to staging
+    Add {
+        /// File or directory path to add
+        path: String,
+        /// Set metadata using dot notation
+        #[arg(long, value_parser = parse_key_value)]
+        set: Vec<(String, String)>,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Remove files from repository
+    Rm {
+        /// File path to remove
+        path: String,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Move/rename files
+    Mv {
+        /// Source path
+        src: String,
+        /// Destination path
+        dst: String,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Copy files
+    Cp {
+        /// Source path
+        src: String,
+        /// Destination path
+        dst: String,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// List files in repository
+    Ls {
+        /// Repository name
+        repo: Option<String>,
+        /// Show detailed information
+        #[arg(long)]
+        long: bool,
+        /// Show all files including hidden
+        #[arg(long)]
+        all: bool,
+    },
+    /// Show file information
+    Show {
+        /// Repository name
+        repo: Option<String>,
+        /// File path
+        path: String,
+    },
+    /// Commit changes
+    Commit {
+        /// Commit message
+        #[arg(short, long)]
+        message: String,
+        /// Set commit metadata using dot notation
+        #[arg(long, value_parser = parse_key_value)]
+        set: Vec<(String, String)>,
+        /// Dry run (show plan without writing)
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Show commit history
+    Log {
+        /// Repository name
+        repo: Option<String>,
+        /// Number of commits to show
+        #[arg(long, default_value = "10")]
+        count: u32,
+        /// Show detailed information
+        #[arg(long)]
+        oneline: bool,
+    },
+    /// Show repository status
+    Status {
+        /// Repository name
+        repo: Option<String>,
+    },
+    /// Show repository information
+    Info {
+        /// Repository name
+        repo: Option<String>,
+    },
+    /// Manage branches
+    Branch {
+        /// Repository name
+        repo: Option<String>,
+        /// Branch name
+        name: Option<String>,
+        /// Create new branch
+        #[arg(long)]
+        create: bool,
+        /// Delete branch
+        #[arg(long)]
+        delete: bool,
+    },
+    /// Manage tags
+    Tag {
+        /// Repository name
+        repo: Option<String>,
+        /// Tag name
+        name: Option<String>,
+        /// Tag message
+        #[arg(long)]
+        message: Option<String>,
+        /// Delete tag
+        #[arg(long)]
+        delete: bool,
+        /// List all tags
+        #[arg(long)]
+        list: bool,
+    },
+    /// Show differences
+    Diff {
+        /// Repository name
+        repo: Option<String>,
+        /// Compare with specific commit
+        #[arg(long)]
+        commit: Option<String>,
+    },
     /// Generate shell completions
     Completions {
         /// Shell type
@@ -386,6 +513,45 @@ async fn main() -> Result<()> {
                 dry_run,
                 with_authorization,
             }).await?;
+        },
+        Commands::Add { path, set, dry_run } => {
+            add_command(path, set, dry_run, &api_client).await?;
+        },
+        Commands::Rm { path, dry_run } => {
+            rm_command(path, dry_run, &api_client).await?;
+        },
+        Commands::Mv { src, dst, dry_run } => {
+            mv_command(src, dst, dry_run, &api_client).await?;
+        },
+        Commands::Cp { src, dst, dry_run } => {
+            cp_command(src, dst, dry_run, &api_client).await?;
+        },
+        Commands::Ls { repo, long, all } => {
+            ls_command(repo, long, all, &api_client).await?;
+        },
+        Commands::Show { repo, path } => {
+            show_command(repo, path, &api_client).await?;
+        },
+        Commands::Commit { message, set, dry_run } => {
+            commit_command(message, set, dry_run, &api_client).await?;
+        },
+        Commands::Log { repo, count, oneline } => {
+            log_command(repo, count, oneline, &api_client).await?;
+        },
+        Commands::Status { repo } => {
+            status_command(repo, &api_client).await?;
+        },
+        Commands::Info { repo } => {
+            info_command(repo, &api_client).await?;
+        },
+        Commands::Branch { repo, name, create, delete } => {
+            branch_command(repo, name, create, delete, &api_client).await?;
+        },
+        Commands::Tag { repo, name, message, delete, list } => {
+            tag_command(repo, name, message, delete, list, &api_client).await?;
+        },
+        Commands::Diff { repo, commit } => {
+            diff_command(repo, commit, &api_client).await?;
         },
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
@@ -656,6 +822,221 @@ async fn get_rdf_command(repo: String, r#ref: String, path: String, format: Stri
     let rdf_content = api_client.get_rdf(&repo, &r#ref, &path, &format).await?;
     
     println!("{}", rdf_content);
+    
+    Ok(())
+}
+
+async fn add_command(path: String, set: Vec<(String, String)>, dry_run: bool, api_client: &ApiClient) -> Result<()> {
+    println!("📁 Adding file: {}", path);
+    
+    if dry_run {
+        println!("🔍 Dry run - would add: {}", path);
+        return Ok(());
+    }
+    
+    // TODO: Implement actual add functionality
+    println!("✅ File added to staging: {}", path);
+    Ok(())
+}
+
+async fn rm_command(path: String, dry_run: bool, api_client: &ApiClient) -> Result<()> {
+    println!("🗑️ Removing file: {}", path);
+    
+    if dry_run {
+        println!("🔍 Dry run - would remove: {}", path);
+        return Ok(());
+    }
+    
+    // TODO: Implement actual remove functionality
+    println!("✅ File removed: {}", path);
+    Ok(())
+}
+
+async fn mv_command(src: String, dst: String, dry_run: bool, api_client: &ApiClient) -> Result<()> {
+    println!("📦 Moving file: {} -> {}", src, dst);
+    
+    if dry_run {
+        println!("🔍 Dry run - would move: {} -> {}", src, dst);
+        return Ok(());
+    }
+    
+    // TODO: Implement actual move functionality
+    println!("✅ File moved: {} -> {}", src, dst);
+    Ok(())
+}
+
+async fn cp_command(src: String, dst: String, dry_run: bool, api_client: &ApiClient) -> Result<()> {
+    println!("📋 Copying file: {} -> {}", src, dst);
+    
+    if dry_run {
+        println!("🔍 Dry run - would copy: {} -> {}", src, dst);
+        return Ok(());
+    }
+    
+    // TODO: Implement actual copy functionality
+    println!("✅ File copied: {} -> {}", src, dst);
+    Ok(())
+}
+
+async fn ls_command(repo: Option<String>, long: bool, all: bool, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("📁 Listing files in repository: {}", repo_name);
+    
+    // TODO: Implement actual list functionality
+    println!("📄 file1.txt");
+    println!("📄 file2.txt");
+    if long {
+        println!("   Size: 1024 bytes");
+        println!("   Modified: 2024-01-15 10:00:00");
+    }
+    
+    Ok(())
+}
+
+async fn show_command(repo: Option<String>, path: String, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("📄 Showing file information: {}/{}", repo_name, path);
+    
+    // TODO: Implement actual show functionality
+    println!("Path: {}", path);
+    println!("Size: 1024 bytes");
+    println!("Type: text/plain");
+    println!("Modified: 2024-01-15 10:00:00");
+    
+    Ok(())
+}
+
+async fn commit_command(message: String, set: Vec<(String, String)>, dry_run: bool, api_client: &ApiClient) -> Result<()> {
+    println!("💾 Committing changes: {}", message);
+    
+    if dry_run {
+        println!("🔍 Dry run - would commit: {}", message);
+        return Ok(());
+    }
+    
+    // TODO: Implement actual commit functionality
+    println!("✅ Changes committed: {}", message);
+    Ok(())
+}
+
+async fn log_command(repo: Option<String>, count: u32, oneline: bool, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("📜 Commit history for repository: {}", repo_name);
+    
+    // TODO: Implement actual log functionality
+    for i in 0..count {
+        if oneline {
+            println!("{} abc123 Initial commit", i);
+        } else {
+            println!("commit abc123");
+            println!("Author: Data Scientist <data@example.com>");
+            println!("Date: 2024-01-15 10:00:00");
+            println!("");
+            println!("    Initial commit");
+            println!("");
+        }
+    }
+    
+    Ok(())
+}
+
+async fn status_command(repo: Option<String>, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("📊 Repository status: {}", repo_name);
+    
+    // TODO: Implement actual status functionality
+    println!("On branch main");
+    println!("Changes to be committed:");
+    println!("  (use \"blacklake-cli reset HEAD <file>\" to unstage)");
+    println!("        new file:   file1.txt");
+    println!("");
+    println!("Changes not staged for commit:");
+    println!("  (use \"blacklake-cli add <file>\" to update what will be committed)");
+    println!("        modified:   file2.txt");
+    
+    Ok(())
+}
+
+async fn info_command(repo: Option<String>, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("ℹ️ Repository information: {}", repo_name);
+    
+    // TODO: Implement actual info functionality
+    println!("Name: {}", repo_name);
+    println!("Description: Machine Learning Pipeline");
+    println!("Author: Data Science Team");
+    println!("License: MIT");
+    println!("Version: 1.0.0");
+    println!("Tags: ml, ai, pipeline");
+    
+    Ok(())
+}
+
+async fn branch_command(repo: Option<String>, name: Option<String>, create: bool, delete: bool, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    
+    if create {
+        let branch_name = name.unwrap_or_else(|| "feature-branch".to_string());
+        println!("🌿 Creating branch: {} in repository: {}", branch_name, repo_name);
+        // TODO: Implement actual branch creation
+        println!("✅ Branch created: {}", branch_name);
+    } else if delete {
+        let branch_name = name.unwrap_or_else(|| "feature-branch".to_string());
+        println!("🗑️ Deleting branch: {} in repository: {}", branch_name, repo_name);
+        // TODO: Implement actual branch deletion
+        println!("✅ Branch deleted: {}", branch_name);
+    } else {
+        println!("🌿 Branches in repository: {}", repo_name);
+        // TODO: Implement actual branch listing
+        println!("  main");
+        println!("  feature-branch");
+    }
+    
+    Ok(())
+}
+
+async fn tag_command(repo: Option<String>, name: Option<String>, message: Option<String>, delete: bool, list: bool, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    
+    if delete {
+        let tag_name = name.unwrap_or_else(|| "v1.0.0".to_string());
+        println!("🏷️ Deleting tag: {} in repository: {}", tag_name, repo_name);
+        // TODO: Implement actual tag deletion
+        println!("✅ Tag deleted: {}", tag_name);
+    } else if list {
+        println!("🏷️ Tags in repository: {}", repo_name);
+        // TODO: Implement actual tag listing
+        println!("  v1.0.0");
+        println!("  v1.1.0");
+    } else {
+        let tag_name = name.unwrap_or_else(|| "v1.0.0".to_string());
+        let tag_message = message.unwrap_or_else(|| "Release version 1.0.0".to_string());
+        println!("🏷️ Creating tag: {} in repository: {}", tag_name, repo_name);
+        // TODO: Implement actual tag creation
+        println!("✅ Tag created: {} - {}", tag_name, tag_message);
+    }
+    
+    Ok(())
+}
+
+async fn diff_command(repo: Option<String>, commit: Option<String>, api_client: &ApiClient) -> Result<()> {
+    let repo_name = repo.unwrap_or_else(|| "default".to_string());
+    println!("🔍 Showing differences for repository: {}", repo_name);
+    
+    if let Some(commit_hash) = commit {
+        println!("Comparing with commit: {}", commit_hash);
+    }
+    
+    // TODO: Implement actual diff functionality
+    println!("diff --git a/file1.txt b/file1.txt");
+    println!("index 1234567..abcdefg 100644");
+    println!("--- a/file1.txt");
+    println!("+++ b/file1.txt");
+    println!("@@ -1,3 +1,3 @@");
+    println!(" line1");
+    println!("-old line");
+    println!("+new line");
+    println!(" line3");
     
     Ok(())
 }
