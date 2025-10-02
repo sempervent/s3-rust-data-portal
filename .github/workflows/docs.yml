@@ -47,21 +47,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-    - name: Build documentation
-      run: |
-        mkdocs build
+      - name: Build documentation
+        run: |
+          mkdocs build
 
-    - name: Setup Pages
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: actions/configure-pages@v3
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/configure-pages@v3
 
-    - name: Upload artifact
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: actions/upload-pages-artifact@v2
-      with:
-        path: ./site
+      - name: Upload artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./site
 
-    - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      id: deployment
-      uses: actions/deploy-pages@v2
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: deployment
+        uses: actions/deploy-pages@v2
