@@ -72,16 +72,8 @@ theme:
 plugins:
   - search:
       lang: en
-  - mermaid2:
-      arguments:
-        theme: default
-        themeVariables:
-          primaryColor: '#1976d2'
-          primaryTextColor: '#000000'
-          primaryBorderColor: '#1976d2'
-          lineColor: '#000000'
-          secondaryColor: '#f0f0f0'
-          tertiaryColor: '#ffffff'
+  # mermaid2 plugin disabled due to SSL certificate issues in CI
+  # Mermaid diagrams still work via superfences configuration below
   - git-revision-date-localized:
       enable_creation_date: true
 

@@ -43,6 +43,7 @@ blacklake-core = { path = "../core" }
 blacklake-storage = { path = "../storage" }
 blacklake-modelx = { path = "../modelx" }
 urlencoding = "2.1"
+jsonwebtoken = "9.2"
 
 [dev-dependencies]
 tempfile = "3"

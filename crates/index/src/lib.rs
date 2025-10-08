@@ -72,13 +72,13 @@ impl IndexClient {
         let base_delay = std::time::Duration::from_millis(100);
 
         loop {
-            match sqlx::query!(
-                "INSERT INTO repo (id, name, created_at, created_by) VALUES ($1, $2, $3, $4)",
-                id,
-                name,
-                now,
-                created_by
-            )
+        match sqlx::query(
+            "INSERT INTO repo (id, name, created_at, created_by) VALUES ($1, $2, $3, $4)"
+        )
+        .bind(id)
+        .bind(name)
+        .bind(now)
+        .bind(created_by)
             .execute(&self.pool)
             .await
             {
@@ -112,7 +112,7 @@ impl IndexClient {
 
     /// List all repositories
     pub async fn list_repos(&self) -> Result<Vec<Repository>> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query(
             "SELECT id, name, created_at, created_by FROM repo ORDER BY created_at DESC"
         )
         .fetch_all(&self.pool)
@@ -121,29 +121,29 @@ impl IndexClient {
         Ok(rows
             .into_iter()
             .map(|row| Repository {
-                id: blacklake_core::UuidWrapper(row.id),
-                name: row.name,
-                created_at: row.created_at,
-                created_by: row.created_by,
+                id: blacklake_core::UuidWrapper(row.get("id")),
+                name: row.get("name"),
+                created_at: row.get("created_at"),
+                created_by: row.get("created_by"),
             })
             .collect())
     }
 
     /// Get repository by name
     pub async fn get_repo_by_name(&self, name: &str) -> Result<Repository> {
-        let row = sqlx::query!(
-            "SELECT id, name, created_at, created_by FROM repo WHERE name = $1",
-            name
+        let row = sqlx::query(
+            "SELECT id, name, created_at, created_by FROM repo WHERE name = $1"
         )
+        .bind(name)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| IndexError::RepoNotFound(name.to_string()))?;
 
         Ok(Repository {
-            id: blacklake_core::UuidWrapper(row.id),
-            name: row.name,
-            created_at: row.created_at,
-            created_by: row.created_by,
+            id: blacklake_core::UuidWrapper(row.get("id")),
+            name: row.get("name"),
+            created_at: row.get("created_at"),
+            created_by: row.get("created_by"),
         })
     }
 
@@ -151,26 +151,27 @@ impl IndexClient {
 
     /// Get a reference
     pub async fn get_ref(&self, repo_id: Uuid, name: &str) -> Result<Reference> {
-        let row = sqlx::query!(
-            "SELECT repo_id, name, kind, commit_id FROM ref WHERE repo_id = $1 AND name = $2",
-            repo_id,
-            name
+        let row = sqlx::query(
+            "SELECT repo_id, name, kind, commit_id FROM ref WHERE repo_id = $1 AND name = $2"
         )
+        .bind(repo_id)
+        .bind(name)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| IndexError::RefNotFound(name.to_string()))?;
 
-        let kind = match row.kind.as_str() {
+        let kind_str: String = row.get("kind");
+        let kind = match kind_str.as_str() {
             "branch" => ReferenceKind::Branch,
             "tag" => ReferenceKind::Tag,
-            _ => return Err(IndexError::InvalidRefKind(row.kind)),
+            _ => return Err(IndexError::InvalidRefKind(kind_str)),
         };
 
         Ok(Reference {
-            repo_id: blacklake_core::UuidWrapper(row.repo_id),
-            name: row.name,
+            repo_id: blacklake_core::UuidWrapper(row.get("repo_id")),
+            name: row.get("name"),
             kind,
-            commit_id: blacklake_core::UuidWrapper(row.commit_id),
+            commit_id: blacklake_core::UuidWrapper(row.get("commit_id")),
         })
     }
 
@@ -187,14 +188,14 @@ impl IndexClient {
             ReferenceKind::Tag => "tag",
         };
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO ref (repo_id, name, kind, commit_id) VALUES ($1, $2, $3, $4) 
-             ON CONFLICT (repo_id, name) DO UPDATE SET kind = $3, commit_id = $4",
-            repo_id,
-            name,
-            kind_str,
-            commit_id
+             ON CONFLICT (repo_id, name) DO UPDATE SET kind = $3, commit_id = $4"
         )
+        .bind(repo_id)
+        .bind(name)
+        .bind(kind_str)
+        .bind(commit_id)
         .execute(&self.pool)
         .await?;
 
@@ -226,16 +227,16 @@ impl IndexClient {
         let id = Uuid::new_v4();
         let now = Utc::now();
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO commit (id, repo_id, parent_id, author, message, created_at) 
-             VALUES ($1, $2, $3, $4, $5, $6)",
-            id,
-            repo_id,
-            parent_id,
-            author,
-            message,
-            now
+             VALUES ($1, $2, $3, $4, $5, $6)"
         )
+        .bind(id)
+        .bind(repo_id)
+        .bind(parent_id)
+        .bind(author)
+        .bind(message)
+        .bind(now)
         .execute(&self.pool)
         .await?;
 
@@ -252,23 +253,23 @@ impl IndexClient {
 
     /// Get a commit by ID
     pub async fn get_commit(&self, commit_id: Uuid) -> Result<Commit> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT id, repo_id, parent_id, author, message, created_at, stats 
-             FROM commit WHERE id = $1",
-            commit_id
+             FROM commit WHERE id = $1"
         )
+        .bind(commit_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| IndexError::CommitNotFound(commit_id))?;
 
         Ok(Commit {
-            id: blacklake_core::UuidWrapper(row.id),
-            repo_id: blacklake_core::UuidWrapper(row.repo_id.unwrap_or_default()),
-            parent_id: row.parent_id.map(blacklake_core::UuidWrapper),
-            author: row.author,
-            message: row.message,
-            created_at: row.created_at,
-            stats: row.stats,
+            id: blacklake_core::UuidWrapper(row.get("id")),
+            repo_id: blacklake_core::UuidWrapper(row.get::<Option<Uuid>, _>("repo_id").unwrap_or_default()),
+            parent_id: row.get::<Option<Uuid>, _>("parent_id").map(blacklake_core::UuidWrapper),
+            author: row.get("author"),
+            message: row.get("message"),
+            created_at: row.get("created_at"),
+            stats: row.get("stats"),
         })
     }
 
@@ -284,17 +285,17 @@ impl IndexClient {
     ) -> Result<Object> {
         let now = Utc::now();
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO object (sha256, size, media_type, s3_key, created_at) 
              VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (sha256) DO UPDATE SET 
-             size = EXCLUDED.size, media_type = EXCLUDED.media_type, s3_key = EXCLUDED.s3_key",
-            sha256,
-            size,
-            media_type,
-            s3_key,
-            now
+             size = EXCLUDED.size, media_type = EXCLUDED.media_type, s3_key = EXCLUDED.s3_key"
         )
+        .bind(sha256)
+        .bind(size)
+        .bind(media_type)
+        .bind(s3_key)
+        .bind(now)
         .execute(&self.pool)
         .await?;
 
@@ -309,19 +310,19 @@ impl IndexClient {
 
     /// Get an object by SHA256
     pub async fn get_object(&self, sha256: &str) -> Result<Option<Object>> {
-        let row = sqlx::query!(
-            "SELECT sha256, size, media_type, s3_key, created_at FROM object WHERE sha256 = $1",
-            sha256
+        let row = sqlx::query(
+            "SELECT sha256, size, media_type, s3_key, created_at FROM object WHERE sha256 = $1"
         )
+        .bind(sha256)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|row| Object {
-            sha256: row.sha256,
-            size: row.size,
-            media_type: row.media_type,
-            s3_key: row.s3_key,
-            created_at: row.created_at,
+            sha256: row.get("sha256"),
+            size: row.get("size"),
+            media_type: row.get("media_type"),
+            s3_key: row.get("s3_key"),
+            created_at: row.get("created_at"),
         }))
     }
 
@@ -332,22 +333,23 @@ impl IndexClient {
         let mut tx = self.pool.begin().await?;
 
         // Delete existing entries for this commit
-        sqlx::query!("DELETE FROM entry WHERE commit_id = $1", commit_id)
+        sqlx::query("DELETE FROM entry WHERE commit_id = $1")
+            .bind(commit_id)
             .execute(&mut *tx)
             .await?;
 
         // Insert new entries
         for change in changes {
             if change.op != blacklake_core::ChangeOp::Delete {
-                sqlx::query!(
+                sqlx::query(
                     "INSERT INTO entry (commit_id, path, object_sha256, meta, is_dir) 
-                     VALUES ($1, $2, $3, $4, $5)",
-                    commit_id,
-                    change.path,
-                    change.sha256,
-                    change.meta,
-                    false // TODO: determine if directory based on path
+                     VALUES ($1, $2, $3, $4, $5)"
                 )
+                .bind(commit_id)
+                .bind(&change.path)
+                .bind(&change.sha256)
+                .bind(&change.meta)
+                .bind(false) // TODO: determine if directory based on path
                 .execute(&mut *tx)
                 .await?;
             }
@@ -504,25 +506,34 @@ impl IndexClient {
         
         // For now, we'll use a simplified approach since sqlx doesn't support dynamic parameters easily
         // In production, you would use a query builder or prepared statements
-        let entries = sqlx::query_as!(
-            Entry,
+        let rows = sqlx::query(
             "SELECT e.*, r.name as repo_name FROM entry e 
              JOIN repo r ON e.repo_id = r.id 
              WHERE e.repo_id = $1 
              ORDER BY e.created_at DESC 
-             LIMIT $2 OFFSET $3",
-            repo_id,
-            limit as i32,
-            offset as i32
+             LIMIT $2 OFFSET $3"
         )
+        .bind(repo_id)
+        .bind(limit as i32)
+        .bind(offset as i32)
         .fetch_all(&self.pool)
         .await?;
         
+        let entries: Vec<Entry> = rows.into_iter().map(|row| Entry {
+            id: blacklake_core::UuidWrapper(row.get("id")),
+            commit_id: blacklake_core::UuidWrapper(row.get("commit_id")),
+            path: row.get("path"),
+            object_sha256: row.get("object_sha256"),
+            meta: row.get("meta"),
+            is_dir: row.get("is_dir"),
+            created_at: row.get("created_at"),
+        }).collect();
+        
         // Get total count for pagination
-        let total_count = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM entry WHERE repo_id = $1",
-            repo_id
+        let total_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM entry WHERE repo_id = $1"
         )
+        .bind(repo_id)
         .fetch_one(&self.pool)
         .await?;
         
@@ -552,24 +563,24 @@ impl IndexClient {
     ) -> Result<AuditLog> {
         let now = Utc::now();
 
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "INSERT INTO audit_log (at, actor, action, repo_name, ref_name, path, request_meta, response_meta) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-             RETURNING id",
-            now,
-            actor,
-            action,
-            repo_name,
-            ref_name,
-            path,
-            request_meta,
-            response_meta
+             RETURNING id"
         )
+        .bind(now)
+        .bind(actor)
+        .bind(action)
+        .bind(repo_name)
+        .bind(ref_name)
+        .bind(path)
+        .bind(&request_meta)
+        .bind(&response_meta)
         .fetch_one(&self.pool)
         .await?;
 
         Ok(AuditLog {
-            id: row.id,
+            id: row.get("id"),
             at: now,
             actor: actor.to_string(),
             action: action.to_string(),
@@ -585,7 +596,7 @@ impl IndexClient {
 
     /// Upsert entry metadata index
     pub async fn upsert_entry_meta_index(&self, idx: &EntryMetaIndex) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO entry_meta_index (
                 commit_id, path, creation_dt, creator, file_name, file_type, file_size,
                 org_lab, description, data_source, data_collection_method, version,
@@ -604,23 +615,23 @@ impl IndexClient {
                 version = EXCLUDED.version,
                 notes = EXCLUDED.notes,
                 tags = EXCLUDED.tags,
-                license = EXCLUDED.license",
-            idx.commit_id.0,
-            idx.path,
-            idx.creation_dt,
-            idx.creator,
-            idx.file_name,
-            idx.file_type,
-            idx.file_size,
-            idx.org_lab,
-            idx.description,
-            idx.data_source,
-            idx.data_collection_method,
-            idx.version,
-            idx.notes,
-            idx.tags.as_deref(),
-            idx.license
+                license = EXCLUDED.license"
         )
+        .bind(idx.commit_id.0)
+        .bind(&idx.path)
+        .bind(idx.creation_dt)
+        .bind(&idx.creator)
+        .bind(&idx.file_name)
+        .bind(&idx.file_type)
+        .bind(idx.file_size)
+        .bind(&idx.org_lab)
+        .bind(&idx.description)
+        .bind(&idx.data_source)
+        .bind(&idx.data_collection_method)
+        .bind(&idx.version)
+        .bind(&idx.notes)
+        .bind(idx.tags.as_deref())
+        .bind(&idx.license)
         .execute(&self.pool)
         .await?;
 
@@ -643,19 +654,19 @@ impl IndexClient {
             RdfFormat::Jsonld => "jsonld",
         };
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO artifact_rdf (commit_id, path, format, graph, graph_sha256)
              VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (commit_id, path, format) DO UPDATE SET
                 graph = EXCLUDED.graph,
                 graph_sha256 = EXCLUDED.graph_sha256,
-                created_at = now()",
-            commit_id,
-            path,
-            format_str,
-            graph_text,
-            graph_sha256
+                created_at = now()"
         )
+        .bind(commit_id)
+        .bind(path)
+        .bind(format_str)
+        .bind(graph_text)
+        .bind(graph_sha256)
         .execute(&self.pool)
         .await?;
 
@@ -674,27 +685,27 @@ impl IndexClient {
             RdfFormat::Jsonld => "jsonld",
         };
 
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT commit_id, path, format, graph, graph_sha256, created_at
-             FROM artifact_rdf WHERE commit_id = $1 AND path = $2 AND format = $3",
-            commit_id,
-            path,
-            format_str
+             FROM artifact_rdf WHERE commit_id = $1 AND path = $2 AND format = $3"
         )
+        .bind(commit_id)
+        .bind(path)
+        .bind(format_str)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|row| ArtifactRdf {
-            commit_id: blacklake_core::UuidWrapper(row.commit_id),
-            path: row.path,
-            format: match row.format.as_str() {
+            commit_id: blacklake_core::UuidWrapper(row.get("commit_id")),
+            path: row.get("path"),
+            format: match row.get::<String, _>("format").as_str() {
                 "turtle" => RdfFormat::Turtle,
                 "jsonld" => RdfFormat::Jsonld,
                 _ => RdfFormat::Turtle, // default
             },
-            graph: row.graph,
-            graph_sha256: row.graph_sha256,
-            created_at: row.created_at,
+            graph: row.get("graph"),
+            graph_sha256: row.get("graph_sha256"),
+            created_at: row.get("created_at"),
         }))
     }
 
@@ -707,10 +718,11 @@ impl IndexClient {
         key: &str,
         value: &serde_json::Value,
     ) -> Result<()> {
-        sqlx::query!(
-            "UPDATE repo SET features = features || $2::jsonb WHERE id = $1",
-            repo_id,
-            serde_json::json!({ key: value })
+        sqlx::query(
+            "UPDATE repo SET features = features || $2::jsonb WHERE id = $1"
+        )
+        .bind(repo_id)
+        .bind(serde_json::json!({ key: value })
         )
         .execute(&self.pool)
         .await?;
@@ -720,14 +732,14 @@ impl IndexClient {
 
     /// Get repository features
     pub async fn get_repo_features(&self, repo_id: Uuid) -> Result<serde_json::Value> {
-        let row = sqlx::query!(
-            "SELECT features FROM repo WHERE id = $1",
-            repo_id
+        let row = sqlx::query(
+            "SELECT features FROM repo WHERE id = $1"
         )
+        .bind(repo_id)
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|r| r.features).unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())))
+        Ok(row.map(|r| r.get::<serde_json::Value, _>("features")).unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())))
     }
 
     /// Enhanced search with metadata index
@@ -820,50 +832,50 @@ impl IndexClient {
 
     /// Get branch protection rules for a repository reference
     pub async fn get_protected_ref(&self, repo_id: Uuid, ref_name: &str) -> Result<Option<ProtectedRef>> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT id, repo_id, ref_name, require_admin, allow_fast_forward, allow_delete, 
                     required_checks, required_reviewers, require_schema_pass, created_at, updated_at
              FROM protected_refs 
-             WHERE repo_id = $1 AND ref_name = $2",
-            repo_id,
-            ref_name
+             WHERE repo_id = $1 AND ref_name = $2"
         )
+        .bind(repo_id)
+        .bind(ref_name)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|r| ProtectedRef {
-            id: r.id,
-            repo_id: r.repo_id,
-            ref_name: r.ref_name,
-            require_admin: r.require_admin,
-            allow_fast_forward: r.allow_fast_forward,
-            allow_delete: r.allow_delete,
-            required_checks: serde_json::from_value(r.required_checks).unwrap_or_default(),
-            required_reviewers: r.required_reviewers as u32,
-            require_schema_pass: r.require_schema_pass,
+            id: r.get("id"),
+            repo_id: r.get("repo_id"),
+            ref_name: r.get("ref_name"),
+            require_admin: r.get("require_admin"),
+            allow_fast_forward: r.get("allow_fast_forward"),
+            allow_delete: r.get("allow_delete"),
+            required_checks: serde_json::from_value(r.get("required_checks")).unwrap_or_default(),
+            required_reviewers: r.get::<i32, _>("required_reviewers") as u32,
+            require_schema_pass: r.get("require_schema_pass"),
         }))
     }
 
     /// Set branch protection rules for a repository reference
     pub async fn set_protected_ref(&self, protected_ref: &ProtectedRef) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO protected_refs (id, repo_id, ref_name, require_admin, allow_fast_forward, 
                                         allow_delete, required_checks, required_reviewers, require_schema_pass)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              ON CONFLICT (repo_id, ref_name) 
              DO UPDATE SET require_admin = $4, allow_fast_forward = $5, allow_delete = $6,
                           required_checks = $7, required_reviewers = $8, require_schema_pass = $9,
-                          updated_at = NOW()",
-            protected_ref.id,
-            protected_ref.repo_id,
-            protected_ref.ref_name,
-            protected_ref.require_admin,
-            protected_ref.allow_fast_forward,
-            protected_ref.allow_delete,
-            serde_json::to_value(&protected_ref.required_checks)?,
-            protected_ref.required_reviewers as i32,
-            protected_ref.require_schema_pass
+                          updated_at = NOW()"
         )
+        .bind(protected_ref.id)
+        .bind(protected_ref.repo_id)
+        .bind(&protected_ref.ref_name)
+        .bind(protected_ref.require_admin)
+        .bind(protected_ref.allow_fast_forward)
+        .bind(protected_ref.allow_delete)
+        .bind(serde_json::to_value(&protected_ref.required_checks)?)
+        .bind(protected_ref.required_reviewers as i32)
+        .bind(protected_ref.require_schema_pass)
         .execute(&self.pool)
         .await?;
 
@@ -872,35 +884,35 @@ impl IndexClient {
 
     /// Get repository quota configuration
     pub async fn get_repo_quota(&self, repo_id: Uuid) -> Result<Option<RepoQuota>> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT id, repo_id, bytes_soft, bytes_hard, created_at, updated_at
              FROM repo_quota 
-             WHERE repo_id = $1",
-            repo_id
+             WHERE repo_id = $1"
         )
+        .bind(repo_id)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|r| RepoQuota {
-            id: r.id,
-            repo_id: r.repo_id,
-            bytes_soft: r.bytes_soft as u64,
-            bytes_hard: r.bytes_hard as u64,
+            id: r.get("id"),
+            repo_id: r.get("repo_id"),
+            bytes_soft: r.get::<i64, _>("bytes_soft") as u64,
+            bytes_hard: r.get::<i64, _>("bytes_hard") as u64,
         }))
     }
 
     /// Set repository quota configuration
     pub async fn set_repo_quota(&self, quota: &RepoQuota) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO repo_quota (id, repo_id, bytes_soft, bytes_hard)
              VALUES ($1, $2, $3, $4)
              ON CONFLICT (repo_id) 
-             DO UPDATE SET bytes_soft = $3, bytes_hard = $4, updated_at = NOW()",
-            quota.id,
-            quota.repo_id,
-            quota.bytes_soft as i64,
-            quota.bytes_hard as i64
+             DO UPDATE SET bytes_soft = $3, bytes_hard = $4, updated_at = NOW()"
         )
+        .bind(quota.id)
+        .bind(quota.repo_id)
+        .bind(quota.bytes_soft as i64)
+        .bind(quota.bytes_hard as i64)
         .execute(&self.pool)
         .await?;
 
@@ -909,33 +921,33 @@ impl IndexClient {
 
     /// Get repository usage
     pub async fn get_repo_usage(&self, repo_id: Uuid) -> Result<Option<RepoUsage>> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT id, repo_id, current_bytes, last_calculated
              FROM repo_usage 
-             WHERE repo_id = $1",
-            repo_id
+             WHERE repo_id = $1"
         )
+        .bind(repo_id)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|r| RepoUsage {
-            id: r.id.unwrap_or_default(),
-            repo_id: r.repo_id,
-            current_bytes: r.current_bytes as u64,
-            last_calculated: r.last_calculated,
+            id: r.get::<Option<Uuid>, _>("id").unwrap_or_default(),
+            repo_id: r.get("repo_id"),
+            current_bytes: r.get::<i64, _>("current_bytes") as u64,
+            last_calculated: r.get("last_calculated"),
         }))
     }
 
     /// Update repository usage
     pub async fn update_repo_usage(&self, repo_id: Uuid, current_bytes: u64) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO repo_usage (repo_id, current_bytes, last_calculated)
              VALUES ($1, $2, NOW())
              ON CONFLICT (repo_id) 
-             DO UPDATE SET current_bytes = $2, last_calculated = NOW()",
-            repo_id,
-            current_bytes as i64
+             DO UPDATE SET current_bytes = $2, last_calculated = NOW()"
         )
+        .bind(repo_id)
+        .bind(current_bytes as i64)
         .execute(&self.pool)
         .await?;
 
@@ -944,38 +956,38 @@ impl IndexClient {
 
     /// Get quota status for a repository
     pub async fn get_quota_status(&self, repo_id: Uuid) -> Result<Option<QuotaStatus>> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT q.bytes_soft, q.bytes_hard, u.current_bytes
              FROM repo_quota q
              LEFT JOIN repo_usage u ON q.repo_id = u.repo_id
-             WHERE q.repo_id = $1",
-            repo_id
+             WHERE q.repo_id = $1"
         )
+        .bind(repo_id)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|r| QuotaStatus::new(
-            r.current_bytes as u64,
-            r.bytes_soft as u64,
-            r.bytes_hard as u64,
+            r.get::<Option<i64>, _>("current_bytes").map(|b| b as u64).unwrap_or(0),
+            r.get::<i64, _>("bytes_soft") as u64,
+            r.get::<i64, _>("bytes_hard") as u64,
         )))
     }
 
     /// Get retention policy for a repository
     pub async fn get_repo_retention(&self, repo_id: Uuid) -> Result<Option<RepoRetention>> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             "SELECT id, repo_id, retention_policy, created_at, updated_at
              FROM repo_retention 
-             WHERE repo_id = $1",
-            repo_id
+             WHERE repo_id = $1"
         )
+        .bind(repo_id)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(|r| RepoRetention {
-            id: r.id,
-            repo_id: r.repo_id,
-            retention_policy: serde_json::from_value(r.retention_policy).unwrap_or_else(|_| RetentionPolicy {
+            id: r.get("id"),
+            repo_id: r.get("repo_id"),
+            retention_policy: serde_json::from_value(r.get("retention_policy")).unwrap_or_else(|_| RetentionPolicy {
                 tombstone_days: 30,
                 hard_delete_days: 90,
                 legal_hold: false,
@@ -985,14 +997,15 @@ impl IndexClient {
 
     /// Set retention policy for a repository
     pub async fn set_repo_retention(&self, retention: &RepoRetention) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO repo_retention (id, repo_id, retention_policy)
              VALUES ($1, $2, $3)
              ON CONFLICT (repo_id) 
-             DO UPDATE SET retention_policy = $3, updated_at = NOW()",
-            retention.id,
-            retention.repo_id,
-            serde_json::to_value(&retention.retention_policy)?
+             DO UPDATE SET retention_policy = $3, updated_at = NOW()"
+        )
+        .bind(retention.id)
+        .bind(retention.repo_id)
+        .bind(serde_json::to_value(&retention.retention_policy)?
         )
         .execute(&self.pool)
         .await?;
@@ -1011,20 +1024,20 @@ impl IndexClient {
 
     /// Submit a check result
     pub async fn submit_check_result(&self, check: &CheckResult) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO check_results (id, repo_id, ref_name, commit_id, check_name, status, details_url, output)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              ON CONFLICT (repo_id, ref_name, commit_id, check_name) 
-             DO UPDATE SET status = $6, details_url = $7, output = $8, updated_at = NOW()",
-            check.id,
-            check.repo_id,
-            check.ref_name,
-            check.commit_id,
-            check.check_name,
-            &check.status.to_string(),
-            check.details_url,
-            check.output
+             DO UPDATE SET status = $6, details_url = $7, output = $8, updated_at = NOW()"
         )
+        .bind(check.id)
+        .bind(check.repo_id)
+        .bind(&check.ref_name)
+        .bind(check.commit_id)
+        .bind(&check.check_name)
+        .bind(&check.status.to_string())
+        .bind(&check.details_url)
+        .bind(&check.output)
         .execute(&self.pool)
         .await?;
 
@@ -1033,27 +1046,27 @@ impl IndexClient {
 
     /// Get check results for a commit
     pub async fn get_check_results(&self, repo_id: Uuid, ref_name: &str, commit_id: Uuid) -> Result<Vec<CheckResult>> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query(
             "SELECT id, repo_id, ref_name, commit_id, check_name, status, details_url, output, created_at, updated_at
              FROM check_results 
              WHERE repo_id = $1 AND ref_name = $2 AND commit_id = $3
-             ORDER BY created_at",
-            repo_id,
-            ref_name,
-            commit_id
+             ORDER BY created_at"
         )
+        .bind(repo_id)
+        .bind(ref_name)
+        .bind(commit_id)
         .fetch_all(&self.pool)
         .await?;
 
         let checks = rows.into_iter().map(|r| CheckResult {
-            id: r.id,
-            repo_id: r.repo_id,
-            ref_name: r.ref_name,
-            commit_id: r.commit_id,
-            check_name: r.check_name,
-            status: serde_json::from_value(serde_json::Value::String(r.status)).unwrap_or(CheckStatus::Pending),
-            details_url: r.details_url,
-            output: r.output,
+            id: r.get("id"),
+            repo_id: r.get("repo_id"),
+            ref_name: r.get("ref_name"),
+            commit_id: r.get("commit_id"),
+            check_name: r.get("check_name"),
+            status: serde_json::from_value(serde_json::Value::String(r.get("status"))).unwrap_or(CheckStatus::Pending),
+            details_url: r.get("details_url"),
+            output: r.get("output"),
         }).collect();
 
         Ok(checks)
@@ -1063,18 +1076,18 @@ impl IndexClient {
 
     /// Create a webhook
     pub async fn create_webhook(&self, webhook: &Webhook) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO webhooks (id, repo_id, url, secret, events, active)
             VALUES ($1, $2, $3, $4, $5, $6)
-            "#,
-            webhook.id,
-            webhook.repo_id,
-            webhook.url,
-            webhook.secret,
-            serde_json::to_value(&webhook.events)?,
-            webhook.active
+            "#
         )
+        .bind(webhook.id)
+        .bind(webhook.repo_id)
+        .bind(&webhook.url)
+        .bind(&webhook.secret)
+        .bind(serde_json::to_value(&webhook.events)?)
+        .bind(webhook.active)
         .execute(&self.pool)
         .await?;
 
@@ -1083,24 +1096,24 @@ impl IndexClient {
 
     /// Get webhook by ID
     pub async fn get_webhook(&self, webhook_id: Uuid) -> Result<Webhook> {
-        let row = sqlx::query!(
+        let row = sqlx::query(
             r#"
             SELECT id, repo_id, url, secret, events, active
             FROM webhooks
             WHERE id = $1
-            "#,
-            webhook_id
+            "#
         )
+        .bind(webhook_id)
         .fetch_one(&self.pool)
         .await?;
 
         let webhook = Webhook {
-            id: row.id,
-            repo_id: row.repo_id,
-            url: row.url,
-            secret: row.secret,
-            events: serde_json::from_value(row.events)?,
-            active: row.active,
+            id: row.get("id"),
+            repo_id: row.get("repo_id"),
+            url: row.get("url"),
+            secret: row.get("secret"),
+            events: serde_json::from_value(row.get("events"))?,
+            active: row.get("active"),
         };
 
         Ok(webhook)
@@ -1108,26 +1121,26 @@ impl IndexClient {
 
     /// Get webhooks for a repository
     pub async fn get_webhooks(&self, repo_id: Uuid) -> Result<Vec<Webhook>> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query(
             r#"
             SELECT id, repo_id, url, secret, events, active
             FROM webhooks
             WHERE repo_id = $1 AND active = true
-            "#,
-            repo_id
+            "#
         )
+        .bind(repo_id)
         .fetch_all(&self.pool)
         .await?;
 
         let webhooks = rows
             .into_iter()
             .map(|row| Webhook {
-                id: row.id,
-                repo_id: row.repo_id,
-                url: row.url,
-                secret: row.secret,
-                events: serde_json::from_value(row.events).unwrap_or_default(),
-                active: row.active,
+                id: row.get("id"),
+                repo_id: row.get("repo_id"),
+                url: row.get("url"),
+                secret: row.get("secret"),
+                events: serde_json::from_value(row.get("events")).unwrap_or_default(),
+                active: row.get("active"),
             })
             .collect();
 
@@ -1136,12 +1149,12 @@ impl IndexClient {
 
     /// Delete a webhook
     pub async fn delete_webhook(&self, webhook_id: Uuid) -> Result<()> {
-        sqlx::query!(
-            r#"
+        sqlx::query(
+            "
             DELETE FROM webhooks WHERE id = $1
-            "#,
-            webhook_id
+            "
         )
+        .bind(webhook_id)
         .execute(&self.pool)
         .await?;
 
@@ -1150,26 +1163,26 @@ impl IndexClient {
 
     /// Create webhook delivery
     pub async fn create_webhook_delivery(&self, delivery: &WebhookDelivery) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO webhook_deliveries (
                 id, webhook_id, event, payload, status, attempts, max_attempts,
                 next_retry_at, response_status, response_body, delivered_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            "#,
-            delivery.id,
-            delivery.webhook_id,
-            delivery.event_type,
-            delivery.payload,
-            "pending", // status
-            delivery.attempts as i32,
-            delivery.max_attempts as i32,
-            delivery.next_retry_at,
-            delivery.response_status.map(|s| s as i32),
-            delivery.response_body,
-            delivery.delivered_at
+            "#
         )
+        .bind(delivery.id)
+        .bind(delivery.webhook_id)
+        .bind(&delivery.event_type)
+        .bind(&delivery.payload)
+        .bind("pending") // status
+        .bind(delivery.attempts as i32)
+        .bind(delivery.max_attempts as i32)
+        .bind(delivery.next_retry_at)
+        .bind(delivery.response_status.map(|s| s as i32))
+        .bind(&delivery.response_body)
+        .bind(delivery.delivered_at)
         .execute(&self.pool)
         .await?;
 
@@ -1178,21 +1191,21 @@ impl IndexClient {
 
     /// Update webhook delivery
     pub async fn update_webhook_delivery(&self, delivery: &WebhookDelivery) -> Result<()> {
-        sqlx::query!(
-            r#"
+        sqlx::query(
+            "
             UPDATE webhook_deliveries SET
                 attempts = $2, max_attempts = $3, next_retry_at = $4,
                 response_status = $5, response_body = $6, delivered_at = $7
             WHERE id = $1
-            "#,
-            delivery.id,
-            delivery.attempts as i32,
-            delivery.max_attempts as i32,
-            delivery.next_retry_at,
-            delivery.response_status.map(|s| s as i32),
-            delivery.response_body,
-            delivery.delivered_at
+            "
         )
+        .bind(delivery.id)
+        .bind(delivery.attempts as i32)
+        .bind(delivery.max_attempts as i32)
+        .bind(delivery.next_retry_at)
+        .bind(delivery.response_status.map(|s| s as i32))
+        .bind(&delivery.response_body)
+        .bind(delivery.delivered_at)
         .execute(&self.pool)
         .await?;
 
@@ -1201,29 +1214,29 @@ impl IndexClient {
 
     /// Get webhook delivery by ID
     pub async fn get_webhook_delivery(&self, delivery_id: Uuid) -> Result<WebhookDelivery> {
-        let row = sqlx::query!(
-            r#"
+        let row = sqlx::query(
+            "
             SELECT id, webhook_id, event, payload, status, attempts, max_attempts, last_attempt_at,
                    next_retry_at, response_status, response_body, error_message, delivered_at, created_at, updated_at
             FROM webhook_deliveries
             WHERE id = $1
-            "#,
-            delivery_id
+            "
         )
+        .bind(delivery_id)
         .fetch_one(&self.pool)
         .await?;
 
         let delivery = WebhookDelivery {
-            id: row.id,
-            webhook_id: row.webhook_id,
-            event_type: row.event,
-            payload: row.payload,
-            response_status: row.response_status.map(|s| s as u16),
-            response_body: row.response_body,
-            attempts: row.attempts as u32,
-            max_attempts: row.max_attempts as u32,
-            next_retry_at: row.next_retry_at,
-            delivered_at: row.delivered_at,
+            id: row.get("id"),
+            webhook_id: row.get("webhook_id"),
+            event_type: row.get("event"),
+            payload: row.get("payload"),
+            response_status: row.get::<Option<i32>, _>("response_status").map(|s| s as u16),
+            response_body: row.get("response_body"),
+            attempts: row.get::<i32, _>("attempts") as u32,
+            max_attempts: row.get::<i32, _>("max_attempts") as u32,
+            next_retry_at: row.get("next_retry_at"),
+            delivered_at: row.get("delivered_at"),
         };
 
         Ok(delivery)
@@ -1231,7 +1244,7 @@ impl IndexClient {
 
     /// Get pending webhook deliveries
     pub async fn get_pending_webhook_deliveries(&self) -> Result<Vec<WebhookDelivery>> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query(
             r#"
             SELECT id, webhook_id, event, payload, status, attempts, max_attempts, last_attempt_at,
                    next_retry_at, response_status, response_body, error_message, delivered_at, created_at, updated_at
@@ -1239,25 +1252,25 @@ impl IndexClient {
             WHERE status IN ('pending', 'failed') AND (next_retry_at IS NULL OR next_retry_at <= $1)
             ORDER BY created_at ASC
             LIMIT 100
-            "#,
-            chrono::Utc::now()
+            "#
         )
+        .bind(chrono::Utc::now())
         .fetch_all(&self.pool)
         .await?;
 
         let deliveries = rows
             .into_iter()
             .map(|row| WebhookDelivery {
-                id: row.id,
-                webhook_id: row.webhook_id,
-                event_type: row.event,
-                payload: row.payload,
-                response_status: row.response_status.map(|s| s as u16),
-                response_body: row.response_body,
-                attempts: row.attempts as u32,
-                max_attempts: row.max_attempts as u32,
-                next_retry_at: row.next_retry_at,
-                delivered_at: row.delivered_at,
+                id: row.get("id"),
+                webhook_id: row.get("webhook_id"),
+                event_type: row.get("event"),
+                payload: row.get("payload"),
+                response_status: row.get::<Option<i32>, _>("response_status").map(|s| s as u16),
+                response_body: row.get("response_body"),
+                attempts: row.get::<i32, _>("attempts") as u32,
+                max_attempts: row.get::<i32, _>("max_attempts") as u32,
+                next_retry_at: row.get("next_retry_at"),
+                delivered_at: row.get("delivered_at"),
             })
             .collect();
 
@@ -1266,33 +1279,33 @@ impl IndexClient {
 
     /// Get webhook deliveries for a webhook
     pub async fn get_webhook_deliveries(&self, webhook_id: Uuid) -> Result<Vec<WebhookDelivery>> {
-        let rows = sqlx::query!(
-            r#"
+        let rows = sqlx::query(
+            "
             SELECT id, webhook_id, event, payload, attempts, max_attempts,
                    next_retry_at, response_status, response_body, delivered_at
             FROM webhook_deliveries
             WHERE webhook_id = $1
             ORDER BY created_at DESC
             LIMIT 100
-            "#,
-            webhook_id
+            "
         )
+        .bind(webhook_id)
         .fetch_all(&self.pool)
         .await?;
 
         let deliveries = rows
             .into_iter()
             .map(|row| WebhookDelivery {
-                id: row.id,
-                webhook_id: row.webhook_id,
-                event_type: row.event,
-                payload: row.payload,
-                response_status: row.response_status.map(|s| s as u16),
-                response_body: row.response_body,
-                attempts: row.attempts as u32,
-                max_attempts: row.max_attempts as u32,
-                next_retry_at: row.next_retry_at,
-                delivered_at: row.delivered_at,
+                id: row.get("id"),
+                webhook_id: row.get("webhook_id"),
+                event_type: row.get("event"),
+                payload: row.get("payload"),
+                response_status: row.get::<Option<i32>, _>("response_status").map(|s| s as u16),
+                response_body: row.get("response_body"),
+                attempts: row.get::<i32, _>("attempts") as u32,
+                max_attempts: row.get::<i32, _>("max_attempts") as u32,
+                next_retry_at: row.get("next_retry_at"),
+                delivered_at: row.get("delivered_at"),
             })
             .collect();
 
@@ -1301,12 +1314,12 @@ impl IndexClient {
 
     /// Delete webhook delivery
     pub async fn delete_webhook_delivery(&self, delivery_id: Uuid) -> Result<()> {
-        sqlx::query!(
-            r#"
+        sqlx::query(
+            "
             DELETE FROM webhook_deliveries WHERE id = $1
-            "#,
-            delivery_id
+            "
         )
+        .bind(delivery_id)
         .execute(&self.pool)
         .await?;
 
@@ -1315,18 +1328,18 @@ impl IndexClient {
 
     /// Create webhook dead letter record
     pub async fn create_webhook_dead(&self, dead: &WebhookDead) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO webhook_dead (id, webhook_id, event, payload, attempts, last_error)
             VALUES ($1, $2, $3, $4, $5, $6)
-            "#,
-            dead.id,
-            dead.webhook_id,
-            dead.event_type,
-            dead.payload,
-            dead.attempts as i32,
-            dead.failure_reason
+            "#
         )
+        .bind(dead.id)
+        .bind(dead.webhook_id)
+        .bind(&dead.event_type)
+        .bind(&dead.payload)
+        .bind(dead.attempts as i32)
+        .bind(&dead.failure_reason)
         .execute(&self.pool)
         .await?;
 
@@ -1335,29 +1348,29 @@ impl IndexClient {
 
     /// Get webhook dead letter records for a repository
     pub async fn get_webhook_dead_letter(&self, repo_id: Uuid) -> Result<Vec<WebhookDead>> {
-        let rows = sqlx::query!(
-            r#"
+        let rows = sqlx::query(
+            "
             SELECT wd.id, wd.webhook_id, wd.event, wd.payload, wd.attempts, wd.failure_reason
             FROM webhook_dead wd
             JOIN webhooks w ON wd.webhook_id = w.id
             WHERE w.repo_id = $1
             ORDER BY wd.moved_at DESC
             LIMIT 100
-            "#,
-            repo_id
+            "
         )
+        .bind(repo_id)
         .fetch_all(&self.pool)
         .await?;
 
         let dead_webhooks = rows
             .into_iter()
             .map(|row| WebhookDead {
-                id: row.id,
-                webhook_id: row.webhook_id,
-                event_type: row.event,
-                payload: row.payload,
-                failure_reason: row.failure_reason,
-                attempts: row.attempts as u32,
+                id: row.get("id"),
+                webhook_id: row.get("webhook_id"),
+                event_type: row.get("event"),
+                payload: row.get("payload"),
+                failure_reason: row.get("failure_reason"),
+                attempts: row.get::<i32, _>("attempts") as u32,
             })
             .collect();
 
@@ -1368,22 +1381,22 @@ impl IndexClient {
 
     /// Create export job
     pub async fn create_export_job(&self, job: &ExportJob) -> Result<()> {
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO export_jobs (
                 id, repo_id, user_id, manifest, status, s3_key, download_url, error_message
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            "#,
-            job.id,
-            job.repo_id,
-            &job.user_id,
-            serde_json::to_value(&job.manifest)?,
-            job.status.to_string(),
-            job.s3_key,
-            job.download_url,
-            job.error_message
+            "#
         )
+        .bind(job.id)
+        .bind(job.repo_id)
+        .bind(&job.user_id)
+        .bind(serde_json::to_value(&job.manifest)?)
+        .bind(&job.status.to_string())
+        .bind(&job.s3_key)
+        .bind(&job.download_url)
+        .bind(&job.error_message)
         .execute(&self.pool)
         .await?;
 
@@ -1392,26 +1405,26 @@ impl IndexClient {
 
     /// Get export job by ID
     pub async fn get_export_job(&self, job_id: Uuid) -> Result<ExportJob> {
-        let row = sqlx::query!(
-            r#"
+        let row = sqlx::query(
+            "
             SELECT id, repo_id, user_id, manifest, status, s3_key, download_url, error_message
             FROM export_jobs
             WHERE id = $1
-            "#,
-            job_id
+            "
         )
+        .bind(job_id)
         .fetch_one(&self.pool)
         .await?;
 
         let job = ExportJob {
-            id: row.id,
-            repo_id: row.repo_id,
-            user_id: row.user_id,
-            manifest: serde_json::from_value(row.manifest)?,
-            status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
-            s3_key: row.s3_key,
-            download_url: row.download_url,
-            error_message: row.error_message,
+            id: row.get("id"),
+            repo_id: row.get("repo_id"),
+            user_id: row.get("user_id"),
+            manifest: serde_json::from_value(row.get("manifest"))?,
+            status: ExportJobStatus::from_str(&row.get::<String, _>("status")).unwrap_or(ExportJobStatus::Pending),
+            s3_key: row.get("s3_key"),
+            download_url: row.get("download_url"),
+            error_message: row.get("error_message"),
         };
 
         Ok(job)
@@ -1419,17 +1432,17 @@ impl IndexClient {
 
     /// Update export job status
     pub async fn update_export_job_status(&self, job: &ExportJob) -> Result<()> {
-        sqlx::query!(
-            r#"
+        sqlx::query(
+            "
             UPDATE export_jobs SET
                 status = $2, download_url = $3, error_message = $4
             WHERE id = $1
-            "#,
-            job.id,
-            job.status.to_string(),
-            job.download_url,
-            job.error_message
+            "
         )
+        .bind(job.id)
+        .bind(&job.status.to_string())
+        .bind(&job.download_url)
+        .bind(&job.error_message)
         .execute(&self.pool)
         .await?;
 
@@ -1438,34 +1451,34 @@ impl IndexClient {
 
     /// Get pending export jobs
     pub async fn get_pending_export_jobs(&self) -> Result<Vec<ExportJob>> {
-        let rows = sqlx::query!(
-            r#"
+        let rows = sqlx::query(
+            "
             SELECT id, repo_id, user_id, manifest, status, s3_key, download_url, error_message
             FROM export_jobs
             WHERE status = 'pending'
             ORDER BY id ASC
             LIMIT 10
-            "#,
+            "
         )
-        .fetch_all(&self.pool)
+                .fetch_all(&self.pool)
         .await?;
 
         let jobs = rows
             .into_iter()
             .map(|row| ExportJob {
-                id: row.id,
-                repo_id: row.repo_id,
-                user_id: row.user_id,
-                manifest: serde_json::from_value(row.manifest).unwrap_or_else(|_| ExportManifest {
+                id: row.get("id"),
+                repo_id: row.get("repo_id"),
+                user_id: row.get("user_id"),
+                manifest: serde_json::from_value(row.get("manifest")).unwrap_or_else(|_| ExportManifest {
                     ref_name: "main".to_string(),
                     paths: vec![],
                     include_meta: true,
                     include_rdf: false,
                 }),
-                status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
-                s3_key: row.s3_key,
-                download_url: row.download_url,
-                error_message: row.error_message,
+                status: ExportJobStatus::from_str(&row.get::<String, _>("status")).unwrap_or(ExportJobStatus::Pending),
+                s3_key: row.get("s3_key"),
+                download_url: row.get("download_url"),
+                error_message: row.get("error_message"),
             })
             .collect();
 
@@ -1474,33 +1487,33 @@ impl IndexClient {
 
     /// Get expired export jobs
     pub async fn get_expired_export_jobs(&self, _now: u64) -> Result<Vec<ExportJob>> {
-        let rows = sqlx::query!(
-            r#"
+        let rows = sqlx::query(
+            "
             SELECT id, repo_id, user_id, manifest, status, s3_key, download_url, error_message
             FROM export_jobs
             WHERE status = 'completed'
             ORDER BY id ASC
-            "#
+            "
         )
-        .fetch_all(&self.pool)
+                .fetch_all(&self.pool)
         .await?;
 
         let jobs = rows
             .into_iter()
             .map(|row| ExportJob {
-                id: row.id,
-                repo_id: row.repo_id,
-                user_id: row.user_id,
-                manifest: serde_json::from_value(row.manifest).unwrap_or_else(|_| ExportManifest {
+                id: row.get("id"),
+                repo_id: row.get("repo_id"),
+                user_id: row.get("user_id"),
+                manifest: serde_json::from_value(row.get("manifest")).unwrap_or_else(|_| ExportManifest {
                     ref_name: "main".to_string(),
                     paths: vec![],
                     include_meta: true,
                     include_rdf: false,
                 }),
-                status: ExportJobStatus::from_str(&row.status).unwrap_or(ExportJobStatus::Pending),
-                s3_key: row.s3_key,
-                download_url: row.download_url,
-                error_message: row.error_message,
+                status: ExportJobStatus::from_str(&row.get::<String, _>("status")).unwrap_or(ExportJobStatus::Pending),
+                s3_key: row.get("s3_key"),
+                download_url: row.get("download_url"),
+                error_message: row.get("error_message"),
             })
             .collect();
 
@@ -1509,12 +1522,12 @@ impl IndexClient {
 
     /// Delete export job
     pub async fn delete_export_job(&self, job_id: Uuid) -> Result<()> {
-        sqlx::query!(
-            r#"
+        sqlx::query(
+            "
             DELETE FROM export_jobs WHERE id = $1
-            "#,
-            job_id
+            "
         )
+        .bind(job_id)
         .execute(&self.pool)
         .await?;
 
@@ -1525,30 +1538,30 @@ impl IndexClient {
     pub async fn get_entries_by_path(&self, ref_name: &str, path: &str) -> Result<Vec<Entry>> {
         // This is a simplified implementation
         // In reality, you would need to get the commit ID from the ref first
-        let rows = sqlx::query!(
-            r#"
+        let rows = sqlx::query(
+            "
             SELECT e.id, e.commit_id, e.path, e.object_sha256, e.meta, e.created_at
             FROM entry e
             JOIN commit c ON e.commit_id = c.id
             JOIN ref r ON c.id = r.commit_id
             WHERE r.name = $1 AND e.path = $2
-            "#,
-            ref_name,
-            path
+            "
         )
+        .bind(ref_name)
+        .bind(path)
         .fetch_all(&self.pool)
         .await?;
 
         let entries = rows
             .into_iter()
             .map(|row| Entry {
-                id: blacklake_core::UuidWrapper(row.id.unwrap_or_else(|| uuid::Uuid::new_v4())),
-                commit_id: blacklake_core::UuidWrapper(row.commit_id),
-                path: row.path,
-                object_sha256: row.object_sha256,
-                meta: row.meta,
+                id: blacklake_core::UuidWrapper(row.get("id")),
+                commit_id: blacklake_core::UuidWrapper(row.get("commit_id")),
+                path: row.get("path"),
+                object_sha256: row.get("object_sha256"),
+                meta: row.get("meta"),
                 is_dir: false, // TODO: get from database
-                created_at: row.created_at.unwrap_or_else(|| chrono::Utc::now()),
+                created_at: row.get("created_at"),
             })
             .collect();
 

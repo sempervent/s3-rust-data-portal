@@ -55,7 +55,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for LegalHold {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum LegalHoldStatus {
     Active,
     Released,
@@ -460,15 +460,15 @@ impl ComplianceService {
     }
 
     /// Get entries under legal hold
-    pub async fn get_legal_hold_entries(&self) -> Result<Vec<Uuid>> {
-        let entries = sqlx::query(
-            "SELECT DISTINCT entry_id FROM legal_hold WHERE status = $1"
+    pub async fn get_legal_hold_entries(&self) -> Result<Vec<LegalHold>> {
+        let entries = sqlx::query_as::<_, LegalHold>(
+            "SELECT id, entry_id, reason, created_by, created_at, expires_at, status FROM legal_hold WHERE status = $1"
         )
         .bind(LegalHoldStatus::Active as i32)
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(entries.into_iter().map(|row| row.get("entry_id")).collect())
+        Ok(entries)
     }
 
     /// Get retention status summary

@@ -238,7 +238,7 @@ impl StorageClient {
                         aws_sdk_s3::types::Transition::builder()
                             .storage_class(aws_sdk_s3::types::TransitionStorageClass::Glacier)
                             .days(90) // Move to Glacier after 90 days
-                            .build()?
+                            .build()
                     )
                     .build()?
             )
@@ -247,7 +247,7 @@ impl StorageClient {
         let _ = client
             .put_bucket_lifecycle_configuration()
             .bucket(bucket)
-            .lifecycle_configuration(lifecycle_config?)
+            .lifecycle_configuration(lifecycle_config)
             .send()
             .await;
         

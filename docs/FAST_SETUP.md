@@ -268,5 +268,5 @@ helm install blacklake ./helm/blacklake -f helm/blacklake/values.yaml
 ## Support
 
 - **Documentation**: [Documentation Home](index.md)
-- **Issues**: [GitHub Issues](https://github.com/your-org/blacklake/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/blacklake/discussions)
+- **Issues**: [GitHub Issues](https://github.com/sempervent/s3-rust-data-portal/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sempervent/s3-rust-data-portal/discussions)

@@ -310,6 +310,9 @@ impl ComplianceJobProcessor {
         
         // Implement real CSV export
         let audit_logs = self.compliance_service.get_audit_logs(
+            None, // user_id
+            None, // action
+            None, // resource_type
             None, // start_date
             None, // end_date
             None, // limit
@@ -321,22 +324,23 @@ impl ComplianceJobProcessor {
         // Create CSV content
         let mut csv_content = String::new();
         csv_content.push_str("id,action,user,timestamp,details,ip_address\n");
+        let audit_logs_count = audit_logs.len();
         
         for log in audit_logs {
             csv_content.push_str(&format!(
                 "{},{},{},{},{},{}\n",
                 log.id,
                 log.action,
-                log.user,
-                log.timestamp,
-                log.details.replace(',', ";"), // Escape commas
-                log.ip_address
+                log.user_id,
+                log.created_at,
+                log.details.to_string().replace(',', ";"), // Escape commas
+                log.ip_address.unwrap_or_default()
             ));
         }
         
         std::fs::write(&file_path, csv_content)?;
         
-        tracing::info!("Exported {} audit logs to {}", audit_logs.len(), file_path);
+        tracing::info!("Exported {} audit logs to {}", audit_logs_count, file_path);
         Ok(file_path)
     }
 
@@ -357,31 +361,31 @@ impl ComplianceJobProcessor {
         let file_path = format!("exports/legal_holds_{}.csv", Uuid::new_v4());
         
         // Implement real legal holds export
-        let legal_holds = self.compliance_service.get_legal_holds().await?;
+        let legal_holds = self.compliance_service.get_legal_hold_entries().await?;
         
         std::fs::create_dir_all("exports")?;
         
         // Create CSV content
         let mut csv_content = String::new();
-        csv_content.push_str("id,name,description,start_date,end_date,status,created_by,created_at\n");
+        csv_content.push_str("id,entry_id,reason,created_by,created_at,expires_at,status\n");
+        let legal_holds_count = legal_holds.len();
         
         for hold in legal_holds {
             csv_content.push_str(&format!(
-                "{},{},{},{},{},{},{},{}\n",
+                "{},{},{},{},{},{},{}\n",
                 hold.id,
-                hold.name,
-                hold.description.unwrap_or_default().replace(',', ";"), // Escape commas
-                hold.start_date,
-                hold.end_date.map(|d| d.to_string()).unwrap_or_default(),
-                hold.status,
+                hold.entry_id,
+                hold.reason.replace(',', ";"), // Escape commas
                 hold.created_by,
-                hold.created_at
+                hold.created_at,
+                hold.expires_at.map(|d| d.to_string()).unwrap_or_default(),
+                format!("{:?}", hold.status)
             ));
         }
         
         std::fs::write(&file_path, csv_content)?;
         
-        tracing::info!("Exported {} legal holds to {}", legal_holds.len(), file_path);
+        tracing::info!("Exported {} legal holds to {}", legal_holds_count, file_path);
         Ok(file_path)
     }
 
@@ -391,7 +395,7 @@ impl ComplianceJobProcessor {
         
         // Implement real PDF compliance report generation
         let retention_summary = self.compliance_service.get_retention_status_summary().await?;
-        let legal_holds = self.compliance_service.get_legal_holds().await?;
+        let legal_holds = self.compliance_service.get_legal_hold_entries().await?;
         let audit_logs = self.compliance_service.get_audit_logs(
             None, None, None, None, None, Some(1000), None
         ).await?;
@@ -413,7 +417,7 @@ impl ComplianceJobProcessor {
             },
             "legal_holds": {
                 "total_holds": legal_holds.len(),
-                "active_holds": legal_holds.iter().filter(|h| h.status == "active").count(),
+                "active_holds": legal_holds.iter().filter(|h| h.status == LegalHoldStatus::Active).count(),
                 "holds": legal_holds
             },
             "audit_summary": {

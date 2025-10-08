@@ -74,20 +74,24 @@ pub enum SessionError {
     CsrfMismatch,
     #[error("Session storage error: {0}")]
     Storage(String),
+    #[error("Redis error: {0}")]
+    RedisError(String),
 }
 
 /// Session manager for BlackLake
 pub struct SessionManager {
     config: SessionConfig,
     store: MemoryStore,
+    redis_client: Option<redis::Client>,
 }
 
 impl SessionManager {
     /// Create a new session manager
-    pub fn new(_redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
+    pub fn new(redis_url: &str, config: SessionConfig) -> Result<Self, SessionError> {
         let store = MemoryStore::default();
+        let redis_client = redis::Client::open(redis_url).ok();
         
-        Ok(Self { config, store })
+        Ok(Self { config, store, redis_client })
     }
     
     /// Create session layer for Axum
@@ -202,7 +206,9 @@ impl SessionManager {
     /// Get session statistics from Redis
     pub async fn get_session_stats(&self) -> Result<SessionStats, SessionError> {
         // Implement session statistics from Redis
-        let mut redis_conn = self.redis_client.get_async_connection().await
+        let redis_client = self.redis_client.as_ref()
+            .ok_or_else(|| SessionError::RedisError("Redis client not available".to_string()))?;
+        let mut redis_conn = redis_client.get_async_connection().await
             .map_err(|e| SessionError::RedisError(format!("Failed to get Redis connection: {}", e)))?;
 
         // Get active sessions count
@@ -227,9 +233,9 @@ impl SessionManager {
             .unwrap_or(0);
 
         Ok(SessionStats {
-            active_sessions,
-            expired_sessions,
-            total_sessions,
+            active_sessions: active_sessions as u64,
+            expired_sessions: expired_sessions as u64,
+            total_sessions: total_sessions as u64,
         })
     }
     

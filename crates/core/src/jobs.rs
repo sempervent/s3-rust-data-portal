@@ -7,12 +7,26 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
 use uuid::Uuid;
+use sqlx::Row;
+use std::io::Read;
 
 // Job types
 pub type JobId = Uuid;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobData {
+    pub job_type: String,
+    pub payload: serde_json::Value,
+}
+
 pub trait Job: Send + Sync + 'static {
     fn name(&self) -> &str;
+}
+
+/// Trait for index operations to break circular dependency
+pub trait IndexOperations: Send + Sync {
+    // This trait will be implemented by the index crate
+    // For now, it's empty but can be extended with specific methods as needed
 }
 
 // Job context and response types
@@ -123,6 +137,21 @@ pub trait BlackLakeJob: Job + Send + Sync + 'static {
     
     /// Process the job
     async fn process(&self, ctx: &JobContext) -> Result<JobResponse, JobError>;
+    
+    /// Create export tarball (optional method)
+    async fn create_export_tarball(&self, _s3_client: &aws_sdk_s3::Client) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        Err("Method not implemented".into())
+    }
+    
+    /// Generate RDF from manifest (optional method)
+    fn generate_rdf_from_manifest(&self) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        Err("Method not implemented".into())
+    }
+    
+    /// Perform full reindex (optional method)
+    async fn perform_full_reindex(&self, _db_pool: &sqlx::PgPool) -> Result<u32, Box<dyn std::error::Error + Send + Sync>> {
+        Err("Method not implemented".into())
+    }
 }
 
 /// Index entry job for Solr indexing
@@ -196,7 +225,7 @@ impl BlackLakeJob for IndexEntryJob {
                 tracing::info!("Indexing document: {}", self.path);
                 
                 // Convert to SolrDocument format
-                let solr_doc = blacklake_core::search::SolrDocument {
+                let solr_doc = crate::search::SolrDocument {
                     id: format!("{}:{}:{}:{}", self.repo_name, self.ref_name, self.path, self.commit_id),
                     repo: self.repo_name.clone(),
                     r#ref: self.ref_name.clone(),
@@ -224,7 +253,7 @@ impl BlackLakeJob for IndexEntryJob {
                 tracing::info!("Updating document: {}", self.path);
                 
                 // Convert to SolrDocument format (same as index)
-                let solr_doc = blacklake_core::search::SolrDocument {
+                let solr_doc = crate::search::SolrDocument {
                     id: format!("{}:{}:{}:{}", self.repo_name, self.ref_name, self.path, self.commit_id),
                     repo: self.repo_name.clone(),
                     r#ref: self.ref_name.clone(),
@@ -372,6 +401,7 @@ impl SamplingJob {
         
         // Parse CSV and sample first 100 rows
         let mut reader = csv::Reader::from_reader(data.as_ref());
+        let headers = reader.headers()?.clone();
         let mut sample_data = Vec::new();
         let mut row_count = 0;
         let max_rows = 100;
@@ -385,7 +415,7 @@ impl SamplingJob {
             let mut row = serde_json::Map::new();
             
             for (i, field) in record.iter().enumerate() {
-                if let Some(header) = reader.headers().get(i) {
+                if let Some(header) = headers.get(i) {
                     row.insert(header.to_string(), serde_json::Value::String(field.to_string()));
                 }
             }
@@ -471,7 +501,12 @@ impl BlackLakeJob for RdfEmissionJob {
         );
         
         // Implement RDF emission logic
-        for format in &self.formats {
+        if let Some(s3_client) = &_ctx.s3_client {
+            // Convert JSON metadata to CanonicalMeta once
+            let canonical_meta = serde_json::from_value::<crate::CanonicalMeta>(self.metadata.clone())
+                .map_err(|e| JobError::Processing(format!("Failed to parse metadata: {}", e)))?;
+            
+            for format in &self.formats {
             match format.as_str() {
                 "jsonld" => {
                     tracing::info!("Generating JSON-LD for: {}", self.path);
@@ -480,7 +515,7 @@ impl BlackLakeJob for RdfEmissionJob {
                     let subject_iri = format!("https://blacklake.example.com/repos/{}/blobs/{}", 
                         self.repo_name, self.path);
                     
-                    let jsonld = blacklake_core::rdf::canonical_to_dc_jsonld(&subject_iri, &self.metadata);
+                    let jsonld = crate::canonical_to_dc_jsonld(&subject_iri, &canonical_meta);
                     let jsonld_text = serde_json::to_string_pretty(&jsonld)
                         .map_err(|e| JobError::Processing(format!("JSON serialization failed: {}", e)))?;
                     
@@ -495,7 +530,8 @@ impl BlackLakeJob for RdfEmissionJob {
                             .body(aws_sdk_s3::primitives::ByteStream::from(jsonld_text.as_bytes().to_vec()))
                             .content_type("application/ld+json")
                             .send()
-                            .await?;
+                            .await
+                            .map_err(|e| JobError::Processing(format!("S3 upload failed: {}", e)))?;
                         
                         tracing::info!("JSON-LD stored in S3: s3://{}/{}", bucket, key);
                 }
@@ -506,7 +542,7 @@ impl BlackLakeJob for RdfEmissionJob {
                     let subject_iri = format!("https://blacklake.example.com/repos/{}/blobs/{}", 
                         self.repo_name, self.path);
                     
-                    let turtle_text = blacklake_core::rdf::canonical_to_turtle(&subject_iri, &self.metadata)
+                    let turtle_text = crate::canonical_to_turtle(&subject_iri, &canonical_meta)
                         .map_err(|e| JobError::Processing(format!("Turtle conversion failed: {}", e)))?;
                     
                     // Store Turtle in S3
@@ -520,7 +556,8 @@ impl BlackLakeJob for RdfEmissionJob {
                             .body(aws_sdk_s3::primitives::ByteStream::from(turtle_text.as_bytes().to_vec()))
                             .content_type("text/turtle")
                             .send()
-                            .await?;
+                            .await
+                            .map_err(|e| JobError::Processing(format!("S3 upload failed: {}", e)))?;
                         
                         tracing::info!("Turtle stored in S3: s3://{}/{}", bucket, key);
                 }
@@ -529,6 +566,9 @@ impl BlackLakeJob for RdfEmissionJob {
                     return Err(JobError::Processing(format!("Unsupported RDF format: {}", format)));
                 }
             }
+        }
+        } else {
+            return Err(JobError::Processing("S3 client not available".into()));
         }
         
         Ok(JobResponse::Success)
@@ -736,7 +776,7 @@ impl ExportJob {
                     header.set_path(path)?;
                     header.set_size(data.len() as u64);
                     header.set_cksum();
-                    tar_builder.append(&header, &data)?;
+                    tar_builder.append(&header, &*data)?;
                 }
             }
         }
@@ -1261,12 +1301,12 @@ impl JobQueueConfig {
 
 /// Job manager for handling all BlackLake jobs
 pub struct JobManager {
-    pub redis_storage: apalis::redis::RedisStorage,
+    pub redis_storage: apalis_redis::RedisStorage<JobData>,
     configs: Vec<JobQueueConfig>,
 }
 
 impl JobManager {
-    pub fn new(redis_storage: apalis::redis::RedisStorage) -> Self {
+    pub fn new(redis_storage: apalis_redis::RedisStorage<JobData>) -> Self {
         let configs = vec![
             JobQueueConfig::index_queue(),
             JobQueueConfig::sampling_queue(),
@@ -1282,8 +1322,8 @@ impl JobManager {
     /// Process the next available job
     pub async fn process_next_job(
         &self,
-        index: &blacklake_index::IndexClient,
-        storage: &blacklake_storage::StorageClient,
+        _index: &dyn IndexOperations,
+        _storage: &blacklake_storage::StorageClient,
     ) -> Result<bool, JobError> {
         // This is a simplified implementation
         // In production, this would use Apalis to poll for jobs
@@ -1298,7 +1338,7 @@ impl JobManager {
     pub async fn get_job_status(&self, job_id: &str) -> Result<JobStatus, JobError> {
         use redis::AsyncCommands;
         
-        let mut conn = self.redis_storage.get_connection().await?;
+        let mut conn = self.redis_storage.get_connection().clone();
         let status_key = format!("job:status:{}", job_id);
         
         let status: Option<String> = conn.get(&status_key).await
@@ -1323,7 +1363,7 @@ impl JobManager {
     pub async fn get_dead_letter_jobs(&self) -> Result<Vec<DeadLetterJob>, JobError> {
         use redis::AsyncCommands;
         
-        let mut conn = self.redis_storage.get_connection().await?;
+        let mut conn = self.redis_storage.get_connection().clone();
         let dead_letter_key = "dead_letter_queue";
         
         let job_ids: Vec<String> = conn.lrange(&dead_letter_key, 0, -1).await
@@ -1360,7 +1400,7 @@ impl JobManager {
     pub async fn retry_job(&self, job_id: &str, max_retries: u32) -> Result<(), JobError> {
         use redis::AsyncCommands;
         
-        let mut conn = self.redis_storage.get_connection().await?;
+        let mut conn = self.redis_storage.get_connection().clone();
         let retry_count_key = format!("job:retry:{}", job_id);
         
         let current_retries: u32 = conn.get(&retry_count_key).await
@@ -1520,7 +1560,7 @@ mod tests {
         };
 
         // Test that we can create a SolrDocument from the job
-        let solr_doc = blacklake_core::search::SolrDocument {
+        let solr_doc = crate::search::SolrDocument {
             id: format!("{}:{}:{}:{}", job.repo_name, job.ref_name, job.path, job.commit_id),
             repo: job.repo_name.clone(),
             r#ref: job.ref_name.clone(),
